@@ -202,7 +202,7 @@ async function fetch24h(symbol) {
   return r.json();
 }
 async function fetchDaily(symbol) {
-  const r = await fetch(`${REST}/klines?symbol=${symbol}&interval=1d&limit=${DAILY_MA_N + 20}`);
+  const r = await fetch(`${REST}/klines?symbol=${symbol}&interval=1d&limit=500`);
   if (!r.ok) return [];
   const raw = await r.json();
   return raw.map(k => ({ time: Math.floor(k[0] / 1000), open: +k[1], high: +k[2], low: +k[3], close: +k[4] }));

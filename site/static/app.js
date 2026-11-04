@@ -28,7 +28,7 @@ const ASSETS = [
   { sym: 'MATICUSDT',label: 'MATIC/USDT', color: '#8247e5' },
 ];
 const TF_MAP = { '15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d' };
-const BARS = 500;          // history bars for chart + backtest
+const BARS = 600;          // history bars for chart + backtest (matches research window)
 const DONCHIAN_N = 20;     // breakout channel
 const MA_N = 100;          // trend filter
 const ATR_N = 14;          // volatility stop
@@ -424,7 +424,7 @@ async function buildLeaderboard() {
   $('lb-loading').classList.remove('hidden');
   const results = await Promise.all(ASSETS.map(async (a) => {
     try {
-      const [kl, daily] = await Promise.all([fetchKlines(a.sym, '1h', 400), fetchDaily(a.sym)]);
+      const [kl, daily] = await Promise.all([fetchKlines(a.sym, '4h', 600), fetchDaily(a.sym)]);
       const prevDaily = state.dailyKlines;
       state.dailyKlines = daily;   // set gate data for this asset's backtest
       const bt = backtest(kl);

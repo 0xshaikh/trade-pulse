@@ -123,17 +123,17 @@ function backtest(klines) {
       }
     }
     // --- signal on closed bar i (only once indicators ready) ---
-    if (i < MA_N + 5 || ma[i] == null || atrVals[i] == null || dc.upper[i] == null) continue;
+    if (i < MA_N + 5 || ma[i] == null || atrVals[i] == null || dc.upper[i] == null || dc.upper[i - 1] == null) continue;
     if (pos) continue;
     const slope = maSlope(ma, i);
     const prevClose = close[i - 1];
-    // Long: close breaks above Donchian upper AND MA100 rising
-    if (prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i] && slope > 0 && close[i] > ma[i]) {
+    // Long: close breaks above PRIOR 20-bar high (no look-ahead) AND MA100 rising
+    if (prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i]) {
       const entry = close[i];
       pos = { dir: 1, entry, stop: entry - ATR_MULT_STOP * atrVals[i], target: entry + ATR_MULT_TP * atrVals[i], entryIdx: i };
     }
-    // Short: close breaks below Donchian lower AND MA100 falling
-    else if (prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i] && slope < 0 && close[i] < ma[i]) {
+    // Short: close breaks below PRIOR 20-bar low (no look-ahead) AND MA100 falling
+    else if (prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i]) {
       const entry = close[i];
       pos = { dir: -1, entry, stop: entry + ATR_MULT_STOP * atrVals[i], target: entry - ATR_MULT_TP * atrVals[i], entryIdx: i };
     }
@@ -224,8 +224,8 @@ function renderChart(klines) {
     const prevClose = close[i - 1];
     const slope = maSlope(ma, i);
     if (ma[i] == null || dc.upper[i] == null) continue;
-    const isLong = prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i] && slope > 0 && close[i] > ma[i];
-    const isShort = prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i] && slope < 0 && close[i] < ma[i];
+    const isLong = prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i];
+    const isShort = prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i];
     if (isLong) {
       sigMarkers.push({ time: klines[i].time, position: 'belowBar', color: '#00ff88', shape: 'arrowUp', text: 'BUY' });
       lastTrade = i + 20; // don't re-signal inside channel period
@@ -275,11 +275,12 @@ function updateSignalUI() {
   const ma = sma(close, MA_N);
   const dc = donchian(klines, DONCHIAN_N);
   const i = klines.length - 1;
+  if (i < 1) return;
   const slope = maSlope(ma, i);
   const sv = $('signal-value');
-  if (close[i] > dc.upper[i] && slope > 0 && close[i] > ma[i]) {
+  if (close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i]) {
     sv.textContent = 'BUY SIGNAL'; sv.className = 'signal-value buy';
-  } else if (close[i] < dc.lower[i] && slope < 0 && close[i] < ma[i]) {
+  } else if (close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i]) {
     sv.textContent = 'SELL SIGNAL'; sv.className = 'signal-value sell';
   } else {
     sv.textContent = 'NO TRADE'; sv.className = 'signal-value wait';

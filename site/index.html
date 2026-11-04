@@ -90,6 +90,27 @@
         <p>Strategy: Donchian 20 breakout with MA100 trend filter · 2×ATR stop, 3×ATR target. Backtested on live Binance data in your browser — no server, no API key.</p>
       </div>
     </section>
+    <!-- Trade history panel -->
+    <section class="panel history-panel glass-card">
+      <div class="panel-head">
+        <h2>📜 Trade History <span class="history-sub" id="history-sub">—</span></h2>
+        <span class="panel-note" id="history-note">Live backtest · click a leaderboard asset or switch timeframe</span>
+      </div>
+      <div class="history-body">
+        <div class="history-empty" id="history-empty">
+          <div class="spinner"></div><span>Loading trade history…</span>
+        </div>
+        <table class="history-table" id="history-table" style="display:none">
+          <thead>
+            <tr>
+              <th>#</th><th>Date / Time (UTC)</th><th>Side</th><th>Entry</th><th>Exit</th><th>Reason</th><th>Bars Held</th><th>P&L %</th><th>P&L ($)</th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+        <div class="history-none" id="history-none" style="display:none">No closed trades on this asset/timeframe yet. Try another timeframe or asset.</div>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">

@@ -117,7 +117,7 @@ function backtest(klines) {
       if (exitPrice != null && bar.time > pos.entryIdx) {
         const gross = (exitPrice - pos.entry) / pos.entry * pos.dir;
         const net = gross - entryCost;
-        trades.push({ dir: pos.dir, entry: pos.entry, exit: exitPrice, net, reason, barsHeld: i - pos.entryIdx });
+        trades.push({ dir: pos.dir, entry: pos.entry, exit: exitPrice, net, reason, barsHeld: i - pos.entryIdx, entryTime: klines[pos.entryIdx].time, exitTime: bar.time });
         equity *= (1 + net);
         pos = null;
       }
@@ -295,6 +295,50 @@ function fmtPrice(v) {
 }
 function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; }
 
+/* ==================== Trade history ==================== */
+function fmtDateTime(ts) {
+  const d = new Date(ts * 1000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+function fmtReason(r) {
+  return { stop: 'Stop', target: 'Target', channel: 'Channel exit' }[r] || r;
+}
+function renderTradeHistory(klines, symbol, interval) {
+  const bt = backtest(klines);
+  const trades = bt.trades;
+  const asset = ASSETS.find(a => a.sym === symbol);
+  const sub = $('history-sub');
+  sub.textContent = `${asset ? asset.label : symbol} · ${interval} · ${trades.length} trades`;
+  const empty = $('history-empty');
+  const table = $('history-table');
+  const none = $('history-none');
+  if (!trades.length) {
+    table.style.display = 'none'; none.style.display = 'block';
+    empty.classList.add('hidden');
+    return;
+  }
+  table.style.display = ''; none.style.display = 'none';
+  empty.classList.add('hidden');
+  const body = $('history-body');
+  const rows = trades.map((t, i) => {
+    const dollar = t.net * 10000; // $10k equity base
+    const dstr = (dollar >= 0 ? '+' : '−') + '$' + Math.abs(dollar).toFixed(2);
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${fmtDateTime(t.entryTime)} → ${fmtDateTime(t.exitTime)}</td>
+      <td><span class="side-badge ${t.dir === 1 ? 'buy' : 'sell'}">${t.dir === 1 ? 'BUY' : 'SELL'}</span></td>
+      <td>${fmtPrice(t.entry)}</td>
+      <td>${fmtPrice(t.exit)}</td>
+      <td><span class="reason-badge">${fmtReason(t.reason)}</span></td>
+      <td>${t.barsHeld}</td>
+      <td class="${t.net >= 0 ? 'pos' : 'neg'}">${fmtPct(t.net * 100)}</td>
+      <td class="${t.net >= 0 ? 'pos' : 'neg'}">${dstr}</td>
+    </tr>`;
+  });
+  body.innerHTML = rows.join('');
+}
+
 function showStats(m) {
   $('stat-winrate').textContent = m.winRate.toFixed(0) + '%';
   $('stat-trades').textContent = m.total;
@@ -321,6 +365,7 @@ async function loadSymbol(symbol, keepChart = false) {
     if (!keepChart) renderChart(klines);
     const bt = backtest(klines);
     showStats(bt.metrics);
+    renderTradeHistory(klines, symbol, state.interval);
     if (ticker) {
       const last = +ticker.lastPrice;
       const chg = ((last - +ticker.openPrice) / +ticker.openPrice) * 100;

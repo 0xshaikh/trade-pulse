@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TradePulse — Live Strategy Signals & Leaderboard</title>
+  <meta name="description" content="Live crypto chart with Donchian + MA100 strategy signals and a multi-asset performance leaderboard. Real-time Binance data, no API key needed.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0e1a'/><path d='M25 70 L40 45 L52 58 L75 28' stroke='%2300f5ff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/><circle cx='75' cy='28' r='6' fill='%2300ff88'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <div class="animated-bg">
+    <div class="bg-shape" style="top:-10%; left:-10%; width:400px; height:400px; background:#00f5ff;"></div>
+    <div class="bg-shape" style="bottom:-10%; right:-5%; width:350px; height:350px; background:#0099ff; animation-delay:-8s;"></div>
+    <div class="bg-shape" style="top:40%; left:55%; width:300px; height:300px; background:#00ff88; opacity:0.08; animation-delay:-14s;"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 100 100" width="34" height="34">
+          <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00f5ff"/><stop offset="100%" stop-color="#0099ff"/></linearGradient></defs>
+          <rect width="100" height="100" rx="20" fill="#0a0e1a"/>
+          <path d="M25 70 L40 45 L52 58 L75 28" stroke="url(#lg)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="75" cy="28" r="6" fill="#00ff88"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>TradePulse</h1>
+        <span class="brand-sub">Live Strategy Signals · Leaderboard</span>
+      </div>
+    </div>
+    <div class="live-indicator"><span class="pulse-dot"></span><span id="live-status">LIVE</span></div>
+  </header>
+
+  <main class="layout">
+    <!-- Chart panel -->
+    <section class="panel chart-panel glass-card">
+      <div class="panel-head">
+        <div class="chart-controls">
+          <select id="symbol-select" class="control" aria-label="Asset"></select>
+          <div class="tf-group" role="tablist" aria-label="Timeframe">
+            <button class="tf-btn" data-tf="15m">15m</button>
+            <button class="tf-btn" data-tf="1h">1H</button>
+            <button class="tf-btn active" data-tf="4h">4H</button>
+            <button class="tf-btn" data-tf="1d">1D</button>
+          </div>
+        </div>
+        <div class="live-price" id="live-price">—</div>
+      </div>
+
+      <div class="chart-wrap">
+        <div id="chart"></div>
+        <div class="chart-loading" id="chart-loading"><div class="spinner"></div><span>Loading live market data…</span></div>
+      </div>
+
+      <div class="strategy-bar">
+        <div class="strat-signal" id="strat-signal">
+          <span class="signal-label">Strategy Signal</span>
+          <span class="signal-value wait" id="signal-value">SCANNING</span>
+        </div>
+        <div class="strat-stat"><span class="stat-label">Win Rate</span><span class="stat-value mono" id="stat-winrate">—</span></div>
+        <div class="strat-stat"><span class="stat-label">Trades</span><span class="stat-value mono" id="stat-trades">—</span></div>
+        <div class="strat-stat"><span class="stat-label">Net Return</span><span class="stat-value mono" id="stat-return">—</span></div>
+        <div class="strat-stat"><span class="stat-label">Profit Factor</span><span class="stat-value mono" id="stat-pf">—</span></div>
+      </div>
+    </section>
+
+    <!-- Leaderboard panel -->
+    <section class="panel leaderboard-panel glass-card">
+      <div class="panel-head">
+        <h2>🏆 Performance Leaderboard</h2>
+        <span class="panel-note">Donchian+MA100 backtest · live 1H data</span>
+      </div>
+      <div class="leaderboard-body">
+        <div class="lb-loading" id="lb-loading"><div class="spinner"></div><span>Ranking assets…</span></div>
+        <table class="leaderboard" id="leaderboard">
+          <thead>
+            <tr>
+              <th>#</th><th>Asset</th><th>Return</th><th>Win%</th><th>Trades</th><th>PF</th>
+            </tr>
+          </thead>
+          <tbody id="lb-body"></tbody>
+        </table>
+      </div>
+      <div class="lb-footer">
+        <p>Strategy: Donchian 20 breakout with MA100 trend filter · 2×ATR stop, 3×ATR target. Backtested on live Binance data in your browser — no server, no API key.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>TradePulse · Data: <span class="mono">Binance public API</span> (real-time) · Chart: <span class="mono">TradingView Lightweight Charts</span> · Strategy engine runs client-side</p>
+    <p class="disclaimer">Educational tool — not financial advice. Past performance does not guarantee future results.</p>
+  </footer>
+
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="static/app.js"></script>
+</body>
+</html>

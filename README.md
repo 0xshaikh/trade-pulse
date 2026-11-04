@@ -10,8 +10,9 @@ Real-time crypto chart (TradingView Lightweight Charts) with **Donchian 20 + MA1
 - 🎯 **Strategy signals** — Donchian 20 breakout with MA100 trend filter; BUY/SELL markers on the chart
 - 📊 **Live strategy stats** — win rate, trades, net return, profit factor (computed on closed bars)
 - 📜 **Trade history** — every closed trade with date/time, buy/sell side, entry, exit, exit reason, and P&L; click a leaderboard asset to load its history
-- 🏆 **Leaderboard** — 12 assets ranked by strategy backtest return on live 1H data; click a row to load that chart
-- 🔄 **Asset + timeframe switcher** — BTC, ETH, SOL, BNB, XRP, ADA, DOGE, AVAX, LINK, LTC, DOT, MATIC · 15m/1H/4H/1D
+- 🏆 **Leaderboard** — 14 assets ranked by strategy backtest return on live 1H data; click a row to load that chart
+- 🔄 **Asset + timeframe switcher** — BTC, ETH, SOL, **XAU (Gold)**, **XAG (Silver)**, BNB, XRP, ADA, DOGE, AVAX, LINK, LTC, DOT, MATIC · 15m/1H/4H/1D
+- ⚡ **Perpetual futures data** (Binance USDT-M) — trades futures, not spot
 
 ## Screenshots (from live site)
 
@@ -29,9 +30,9 @@ Mobile:
 
 ## Data
 
-- REST: `https://api.binance.com/api/v3/klines` (history)
-- WebSocket: `wss://stream.binance.com:9443/ws/<sym>@kline_<tf>` (live)
-- Public Binance API — no key required, CORS-open
+- REST: `https://fapi.binance.com/fapi/v1/klines` (perpetual futures history)
+- WebSocket: `wss://fstream.binance.com/ws/<sym>@kline_<tf>` (live)
+- Public Binance USDT-M futures API — no key required, CORS-open
 
 ## Run locally
 

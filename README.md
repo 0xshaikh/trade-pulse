@@ -12,6 +12,14 @@ Real-time crypto chart (TradingView Lightweight Charts) with **Donchian 20 + MA1
 - 🏆 **Leaderboard** — 12 assets ranked by strategy backtest return on live 1H data; click a row to load that chart
 - 🔄 **Asset + timeframe switcher** — BTC, ETH, SOL, BNB, XRP, ADA, DOGE, AVAX, LINK, LTC, DOT, MATIC · 15m/1H/4H/1D
 
+## Screenshots (from live site)
+
+Desktop:
+![TradePulse desktop](site/assets/screenshot-desktop.png)
+
+Mobile:
+![TradePulse mobile](site/assets/screenshot-mobile.png)
+
 ## Strategy
 
 - **Entry:** close breaks above Donchian 20 high (long) or below Donchian 20 low (short), *only* in the direction of the MA100 slope

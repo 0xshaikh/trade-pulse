@@ -34,12 +34,15 @@ const MA_N = 100;          // trend filter
 const ATR_N = 14;          // volatility stop
 const ATR_MULT_STOP = 2;   // 2xATR stop
 const ATR_MULT_TP   = 3;   // 3xATR target
+const MIN_MA_SLOPE = 0.10; // chop filter: |MA100 slope| (as % of price over 5 bars) must exceed this
+const DAILY_MA_N   = 200;  // daily regime gate: trade only in direction of daily MA200
 
 /* ==================== State ==================== */
 const state = {
   symbol: 'BTCUSDT',
   interval: '4h',
   klines: [],          // {time, open, high, low, close, volume}
+  dailyKlines: [],     // 1d klines for regime gate
   ws: null,
   wsSubscribed: false,
   currentAsset: null,  // active leaderboard row
@@ -89,6 +92,23 @@ function maSlope(maArr, i) {
   if (i < MA_N + 5 || maArr[i] == null || maArr[i - 5] == null) return 0;
   return maArr[i] - maArr[i - 5];
 }
+// Slope as % of price over 5 bars (used for chop filter)
+function maSlopePct(maArr, close, i) {
+  if (i < MA_N + 5 || maArr[i] == null || maArr[i - 5] == null || close[i - 1] == null || close[i - 1] === 0) return 0;
+  return ((maArr[i] - maArr[i - 5]) / close[i - 1]) * 100;
+}
+// Daily regime gate: returns +1 (uptrend), -1 (downtrend), or 0 (no data) based on daily close vs daily MA200
+function dailyGate(dailyKlines, ts) {
+  if (!dailyKlines || dailyKlines.length < DAILY_MA_N) return 0;
+  const dclose = dailyKlines.map(k => k.close);
+  const dma = sma(dclose, DAILY_MA_N);
+  let idx = -1;
+  for (let j = 0; j < dailyKlines.length; j++) {
+    if (dailyKlines[j].time <= ts) idx = j; else break;
+  }
+  if (idx < DAILY_MA_N - 1 || dma[idx] == null) return 0;
+  return dclose[idx] > dma[idx] ? 1 : -1;
+}
 
 /* ==================== Strategy backtest (closed bars) ==================== */
 function backtest(klines) {
@@ -99,7 +119,7 @@ function backtest(klines) {
 
   const trades = [];
   let pos = null; // {dir, entry, stop, target, entryIdx, barsHeld}
-  const entryCost = 0.0004; // 0.02% maker x2 round trip
+  const entryCost = 0.0010; // futures taker 0.05% x2 round trip (honest)
   const eq = 10000;
   let equity = eq;
 
@@ -128,15 +148,19 @@ function backtest(klines) {
     // --- signal on closed bar i (only once indicators ready) ---
     if (i < MA_N + 5 || ma[i] == null || atrVals[i] == null || dc.upper[i] == null || dc.upper[i - 1] == null) continue;
     if (pos) continue;
-    const slope = maSlope(ma, i);
+    const slope = maSlopePct(ma, close, i);
+    // Chop filter: skip if MA100 too flat (chop regime — the #1 loss cause)
+    if (Math.abs(slope) < MIN_MA_SLOPE) continue;
     const prevClose = close[i - 1];
+    // Daily regime gate: only long in daily uptrend, only short in daily downtrend
+    const gate = dailyGate(state.dailyKlines, klines[i].time);
     // Long: close breaks above PRIOR 20-bar high (no look-ahead) AND MA100 rising
-    if (prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i]) {
+    if (prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i] && gate !== -1) {
       const entry = close[i];
       pos = { dir: 1, entry, stop: entry - ATR_MULT_STOP * atrVals[i], target: entry + ATR_MULT_TP * atrVals[i], entryIdx: i };
     }
     // Short: close breaks below PRIOR 20-bar low (no look-ahead) AND MA100 falling
-    else if (prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i]) {
+    else if (prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i] && gate !== 1) {
       const entry = close[i];
       pos = { dir: -1, entry, stop: entry + ATR_MULT_STOP * atrVals[i], target: entry - ATR_MULT_TP * atrVals[i], entryIdx: i };
     }
@@ -176,6 +200,12 @@ async function fetch24h(symbol) {
   const r = await fetch(`${REST}/ticker/24hr?symbol=${symbol}`);
   if (!r.ok) return null;
   return r.json();
+}
+async function fetchDaily(symbol) {
+  const r = await fetch(`${REST}/klines?symbol=${symbol}&interval=1d&limit=${DAILY_MA_N + 20}`);
+  if (!r.ok) return [];
+  const raw = await r.json();
+  return raw.map(k => ({ time: Math.floor(k[0] / 1000), open: +k[1], high: +k[2], low: +k[3], close: +k[4] }));
 }
 
 /* ==================== Chart ==================== */
@@ -219,16 +249,18 @@ function renderChart(klines) {
   donkLoSeries.setData(donkLo);
   maSeries.setData(maData);
 
-  // Buy/sell markers at each breakout signal (closed-bar, Donchian+MA100)
+  // Buy/sell markers at each breakout signal (closed-bar, Donchian+MA100 + chop/daily gates)
   const sigMarkers = [];
   let lastTrade = 0;
   for (let i = 1; i < klines.length && sigMarkers.length < 40; i++) {
     if (i < lastTrade) continue;
     const prevClose = close[i - 1];
-    const slope = maSlope(ma, i);
+    const slope = maSlopePct(ma, close, i);
     if (ma[i] == null || dc.upper[i] == null) continue;
-    const isLong = prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i];
-    const isShort = prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i];
+    if (Math.abs(slope) < MIN_MA_SLOPE) continue;
+    const gate = dailyGate(state.dailyKlines, klines[i].time);
+    const isLong = prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i] && gate !== -1;
+    const isShort = prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i] && gate !== 1;
     if (isLong) {
       sigMarkers.push({ time: klines[i].time, position: 'belowBar', color: '#00ff88', shape: 'arrowUp', text: 'BUY' });
       lastTrade = i + 20; // don't re-signal inside channel period
@@ -279,11 +311,12 @@ function updateSignalUI() {
   const dc = donchian(klines, DONCHIAN_N);
   const i = klines.length - 1;
   if (i < 1) return;
-  const slope = maSlope(ma, i);
+  const slope = maSlopePct(ma, close, i);
   const sv = $('signal-value');
-  if (close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i]) {
+  const gate = dailyGate(state.dailyKlines, klines[i].time);
+  if (close[i] > dc.upper[i - 1] && slope > MIN_MA_SLOPE && close[i] > ma[i] && gate !== -1) {
     sv.textContent = 'BUY SIGNAL'; sv.className = 'signal-value buy';
-  } else if (close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i]) {
+  } else if (close[i] < dc.lower[i - 1] && slope < -MIN_MA_SLOPE && close[i] < ma[i] && gate !== 1) {
     sv.textContent = 'SELL SIGNAL'; sv.className = 'signal-value sell';
   } else {
     sv.textContent = 'NO TRADE'; sv.className = 'signal-value wait';
@@ -360,11 +393,13 @@ async function loadSymbol(symbol, keepChart = false) {
   $('live-price').textContent = '…';
   $('chart-loading').classList.remove('hidden');
   try {
-    const [klines, ticker] = await Promise.all([
+    const [klines, ticker, daily] = await Promise.all([
       fetchKlines(symbol, state.interval, BARS),
       fetch24h(symbol),
+      fetchDaily(symbol),
     ]);
     state.klines = klines;
+    state.dailyKlines = daily;
     if (!keepChart) renderChart(klines);
     const bt = backtest(klines);
     showStats(bt.metrics);
@@ -389,8 +424,11 @@ async function buildLeaderboard() {
   $('lb-loading').classList.remove('hidden');
   const results = await Promise.all(ASSETS.map(async (a) => {
     try {
-      const kl = await fetchKlines(a.sym, '1h', 400);
+      const [kl, daily] = await Promise.all([fetchKlines(a.sym, '1h', 400), fetchDaily(a.sym)]);
+      const prevDaily = state.dailyKlines;
+      state.dailyKlines = daily;   // set gate data for this asset's backtest
       const bt = backtest(kl);
+      state.dailyKlines = prevDaily; // restore
       return { ...a, ...bt.metrics, klines: kl };
     } catch (e) { return { ...a, total: 0, winRate: 0, netReturn: 0, profitFactor: 0, error: true }; }
   }));

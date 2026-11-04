@@ -7,13 +7,16 @@
 'use strict';
 
 /* ==================== Config ==================== */
-const REST = 'https://api.binance.com/api/v3';
-const WS   = 'wss://stream.binance.com:9443/ws';
+/* Binance USDT-M PERPETUAL FUTURES — user trades futures, not spot */
+const REST = 'https://fapi.binance.com/fapi/v1';
+const WS   = 'wss://fstream.binance.com/ws';
 
 const ASSETS = [
   { sym: 'BTCUSDT',  label: 'BTC/USDT',   color: '#f7931a' },
   { sym: 'ETHUSDT',  label: 'ETH/USDT',   color: '#627eea' },
   { sym: 'SOLUSDT',  label: 'SOL/USDT',   color: '#9945ff' },
+  { sym: 'XAUUSDT',  label: 'XAU/USDT (Gold)',   color: '#ffd700' },
+  { sym: 'XAGUSDT',  label: 'XAG/USDT (Silver)', color: '#c0c0c0' },
   { sym: 'BNBUSDT',  label: 'BNB/USDT',   color: '#f0b90b' },
   { sym: 'XRPUSDT',  label: 'XRP/USDT',   color: '#23292f' },
   { sym: 'ADAUSDT',  label: 'ADA/USDT',   color: '#0033ad' },

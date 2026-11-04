@@ -29,13 +29,14 @@ const ASSETS = [
 ];
 const TF_MAP = { '15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d' };
 const BARS = 600;          // history bars for chart + backtest (matches research window)
-const DONCHIAN_N = 20;     // breakout channel
+const DONCHIAN_N = 10;     // breakout channel (10 = faster, catches trend earlier)
 const MA_N = 100;          // trend filter
 const ATR_N = 14;          // volatility stop
 const ATR_MULT_STOP = 2;   // 2xATR stop
 const ATR_MULT_TP   = 3;   // 3xATR target
-const MIN_MA_SLOPE = 0.10; // chop filter: |MA100 slope| (as % of price over 5 bars) must exceed this
+const MIN_MA_SLOPE = 0.05; // chop filter: |MA100 slope| (as % of price over 5 bars) must exceed this
 const DAILY_MA_N   = 200;  // daily regime gate: trade only in direction of daily MA200
+const ATR_BAND     = [0.5, 3.0]; // volatility regime: skip dead-vol (<0.5%) / blow-off (>3%) chop
 
 /* ==================== State ==================== */
 const state = {
@@ -151,6 +152,9 @@ function backtest(klines) {
     const slope = maSlopePct(ma, close, i);
     // Chop filter: skip if MA100 too flat (chop regime — the #1 loss cause)
     if (Math.abs(slope) < MIN_MA_SLOPE) continue;
+    // Volatility regime band: skip dead-vol (<0.5%) and blow-off (>3%) chop
+    const atrPct = atrVals[i] / close[i] * 100;
+    if (ATR_BAND && (atrPct < ATR_BAND[0] || atrPct > ATR_BAND[1])) continue;
     const prevClose = close[i - 1];
     // Daily regime gate: only long in daily uptrend, only short in daily downtrend
     const gate = dailyGate(state.dailyKlines, klines[i].time);
@@ -238,6 +242,7 @@ function renderChart(klines) {
   const close = klines.map(k => k.close);
   const ma = sma(close, MA_N);
   const dc = donchian(klines, DONCHIAN_N);
+  const atrVals = atr(klines, ATR_N);
 
   const donkHi = [], donkLo = [], maData = [];
   for (let i = 0; i < klines.length; i++) {
@@ -258,15 +263,17 @@ function renderChart(klines) {
     const slope = maSlopePct(ma, close, i);
     if (ma[i] == null || dc.upper[i] == null) continue;
     if (Math.abs(slope) < MIN_MA_SLOPE) continue;
+    const atrPct = atrVals[i] / close[i] * 100;
+    if (ATR_BAND && (atrPct < ATR_BAND[0] || atrPct > ATR_BAND[1])) continue;
     const gate = dailyGate(state.dailyKlines, klines[i].time);
     const isLong = prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i] && gate !== -1;
     const isShort = prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i] && gate !== 1;
     if (isLong) {
       sigMarkers.push({ time: klines[i].time, position: 'belowBar', color: '#00ff88', shape: 'arrowUp', text: 'BUY' });
-      lastTrade = i + 20; // don't re-signal inside channel period
+      lastTrade = i + DONCHIAN_N * 2; // don't re-signal inside channel period
     } else if (isShort) {
       sigMarkers.push({ time: klines[i].time, position: 'aboveBar', color: '#ff4444', shape: 'arrowDown', text: 'SELL' });
-      lastTrade = i + 20;
+      lastTrade = i + DONCHIAN_N * 2;
     }
   }
   candleSeries.setMarkers(sigMarkers);
@@ -309,14 +316,17 @@ function updateSignalUI() {
   const close = klines.map(k => k.close);
   const ma = sma(close, MA_N);
   const dc = donchian(klines, DONCHIAN_N);
+  const atrVals = atr(klines, ATR_N);
   const i = klines.length - 1;
   if (i < 1) return;
   const slope = maSlopePct(ma, close, i);
   const sv = $('signal-value');
   const gate = dailyGate(state.dailyKlines, klines[i].time);
-  if (close[i] > dc.upper[i - 1] && slope > MIN_MA_SLOPE && close[i] > ma[i] && gate !== -1) {
+  const atrPct = atrVals[i] / close[i] * 100;
+  const inBand = !ATR_BAND || (atrPct >= ATR_BAND[0] && atrPct <= ATR_BAND[1]);
+  if (inBand && close[i] > dc.upper[i - 1] && slope > MIN_MA_SLOPE && close[i] > ma[i] && gate !== -1) {
     sv.textContent = 'BUY SIGNAL'; sv.className = 'signal-value buy';
-  } else if (close[i] < dc.lower[i - 1] && slope < -MIN_MA_SLOPE && close[i] < ma[i] && gate !== 1) {
+  } else if (inBand && close[i] < dc.lower[i - 1] && slope < -MIN_MA_SLOPE && close[i] < ma[i] && gate !== 1) {
     sv.textContent = 'SELL SIGNAL'; sv.className = 'signal-value sell';
   } else {
     sv.textContent = 'NO TRADE'; sv.className = 'signal-value wait';

@@ -32,8 +32,8 @@ const BARS = 600;          // history bars for chart + backtest (matches researc
 const DONCHIAN_N = 10;     // breakout channel (10 = faster, catches trend earlier)
 const MA_N = 100;          // trend filter
 const ATR_N = 14;          // volatility stop
-const ATR_MULT_STOP = 2;   // 2xATR stop
-const ATR_MULT_TP   = 3;   // 3xATR target
+const ATR_MULT_STOP = 2;   // 2xATR stop (1R)
+const ATR_MULT_TP   = 6;   // 3R target (stop=1R -> target=3x stop distance = 6xATR, matches research)
 const MIN_MA_SLOPE = 0.05; // chop filter: |MA100 slope| (as % of price over 5 bars) must exceed this
 const DAILY_MA_N   = 200;  // daily regime gate: trade only in direction of daily MA200
 const ATR_BAND     = [0.5, 3.0]; // volatility regime: skip dead-vol (<0.5%) / blow-off (>3%) chop

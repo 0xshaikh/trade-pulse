@@ -9,6 +9,7 @@ Real-time crypto chart (TradingView Lightweight Charts) with **Donchian 20 + MA1
 - 📈 **Live candlestick chart** (TradingView Lightweight Charts v4) — real-time updates via Binance WebSocket
 - 🎯 **Strategy signals** — Donchian 20 breakout with MA100 trend filter; BUY/SELL markers on the chart
 - 📊 **Live strategy stats** — win rate, trades, net return, profit factor (computed on closed bars)
+- 📜 **Trade history** — every closed trade with date/time, buy/sell side, entry, exit, exit reason, and P&L; click a leaderboard asset to load its history
 - 🏆 **Leaderboard** — 12 assets ranked by strategy backtest return on live 1H data; click a row to load that chart
 - 🔄 **Asset + timeframe switcher** — BTC, ETH, SOL, BNB, XRP, ADA, DOGE, AVAX, LINK, LTC, DOT, MATIC · 15m/1H/4H/1D
 

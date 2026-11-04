@@ -37,6 +37,7 @@ const ATR_MULT_TP   = 6;   // 3R target (stop=1R -> target=3x stop distance = 6x
 const MIN_MA_SLOPE = 0.05; // chop filter: |MA100 slope| (as % of price over 5 bars) must exceed this
 const DAILY_MA_N   = 200;  // daily regime gate: trade only in direction of daily MA200
 const ATR_BAND     = [0.5, 3.0]; // volatility regime: skip dead-vol (<0.5%) / blow-off (>3%) chop
+const ADX_MIN      = 18;         // trend-strength gate: only trade when ADX(14) >= 18 (cut chop)
 
 /* ==================== State ==================== */
 const state = {
@@ -89,6 +90,33 @@ function donchian(klines, n) {
   }
   return { upper, lower };
 }
+// Wilder-smoothed ADX (trend strength). >=ADX_MIN = trending (the chop-cut gate).
+function adx(klines, n) {
+  const out = new Array(klines.length).fill(null);
+  if (klines.length < n + 2) return out;
+  let tr = [], pdm = [], ndm = [];
+  for (let i = 1; i < klines.length; i++) {
+    const h = klines[i].high, l = klines[i].low, ph = klines[i-1].high, pl = klines[i-1].low, pc = klines[i-1].close;
+    const t = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+    const up = h - ph, dn = pl - l;
+    const p = (up > dn && up > 0) ? up : 0;
+    const nn = (dn > up && dn > 0) ? dn : 0;
+    tr.push(t); pdm.push(p); ndm.push(nn);
+    if (i < n) continue;
+    let atrS = 0, pdmS = 0, ndmS = 0;
+    for (let j = i - n + 1; j <= i; j++) { atrS += tr[j-1]; pdmS += pdm[j-1]; ndmS += ndm[j-1]; }
+    atrS /= n; pdmS /= n; ndmS /= n;
+    if (atrS <= 0) { out[i] = 0; continue; }
+    const pdi = 100 * pdmS / atrS, ndi = 100 * ndmS / atrS;
+    const dx = (pdi + ndi) > 0 ? 100 * Math.abs(pdi - ndi) / (pdi + ndi) : 0;
+    if (i === n) { out[i] = dx; }
+    else {
+      const prev = out[i-1];
+      out[i] = (prev != null && prev > 0) ? (prev * (n - 1) + dx) / n : dx;
+    }
+  }
+  return out;
+}
 function maSlope(maArr, i) {
   if (i < MA_N + 5 || maArr[i] == null || maArr[i - 5] == null) return 0;
   return maArr[i] - maArr[i - 5];
@@ -117,6 +145,7 @@ function backtest(klines) {
   const ma = sma(close, MA_N);
   const atrVals = atr(klines, ATR_N);
   const dc = donchian(klines, DONCHIAN_N);
+  const adxVals = adx(klines, 14);
 
   const trades = [];
   let pos = null; // {dir, entry, stop, target, entryIdx, barsHeld}
@@ -155,6 +184,8 @@ function backtest(klines) {
     // Volatility regime band: skip dead-vol (<0.5%) and blow-off (>3%) chop
     const atrPct = atrVals[i] / close[i] * 100;
     if (ATR_BAND && (atrPct < ATR_BAND[0] || atrPct > ATR_BAND[1])) continue;
+    // Trend-strength gate: skip chop (ADX < threshold) — the round-10 loss cutter
+    if (adxVals[i] == null || adxVals[i] < ADX_MIN) continue;
     const prevClose = close[i - 1];
     // Daily regime gate: only long in daily uptrend, only short in daily downtrend
     const gate = dailyGate(state.dailyKlines, klines[i].time);
@@ -243,6 +274,7 @@ function renderChart(klines) {
   const ma = sma(close, MA_N);
   const dc = donchian(klines, DONCHIAN_N);
   const atrVals = atr(klines, ATR_N);
+  const adxVals = adx(klines, 14);
 
   const donkHi = [], donkLo = [], maData = [];
   for (let i = 0; i < klines.length; i++) {
@@ -265,6 +297,7 @@ function renderChart(klines) {
     if (Math.abs(slope) < MIN_MA_SLOPE) continue;
     const atrPct = atrVals[i] / close[i] * 100;
     if (ATR_BAND && (atrPct < ATR_BAND[0] || atrPct > ATR_BAND[1])) continue;
+    if (adxVals[i] == null || adxVals[i] < ADX_MIN) continue;
     const gate = dailyGate(state.dailyKlines, klines[i].time);
     const isLong = prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i] && gate !== -1;
     const isShort = prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i] && gate !== 1;
@@ -317,6 +350,7 @@ function updateSignalUI() {
   const ma = sma(close, MA_N);
   const dc = donchian(klines, DONCHIAN_N);
   const atrVals = atr(klines, ATR_N);
+  const adxVals = adx(klines, 14);
   const i = klines.length - 1;
   if (i < 1) return;
   const slope = maSlopePct(ma, close, i);
@@ -324,9 +358,10 @@ function updateSignalUI() {
   const gate = dailyGate(state.dailyKlines, klines[i].time);
   const atrPct = atrVals[i] / close[i] * 100;
   const inBand = !ATR_BAND || (atrPct >= ATR_BAND[0] && atrPct <= ATR_BAND[1]);
-  if (inBand && close[i] > dc.upper[i - 1] && slope > MIN_MA_SLOPE && close[i] > ma[i] && gate !== -1) {
+  const inTrend = adxVals[i] != null && adxVals[i] >= ADX_MIN;
+  if (inBand && inTrend && close[i] > dc.upper[i - 1] && slope > MIN_MA_SLOPE && close[i] > ma[i] && gate !== -1) {
     sv.textContent = 'BUY SIGNAL'; sv.className = 'signal-value buy';
-  } else if (inBand && close[i] < dc.lower[i - 1] && slope < -MIN_MA_SLOPE && close[i] < ma[i] && gate !== 1) {
+  } else if (inBand && inTrend && close[i] < dc.lower[i - 1] && slope < -MIN_MA_SLOPE && close[i] < ma[i] && gate !== 1) {
     sv.textContent = 'SELL SIGNAL'; sv.className = 'signal-value sell';
   } else {
     sv.textContent = 'NO TRADE'; sv.className = 'signal-value wait';

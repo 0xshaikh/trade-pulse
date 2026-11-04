@@ -87,7 +87,7 @@
         </table>
       </div>
       <div class="lb-footer">
-        <p>Strategy: Donchian 10 breakout with MA100 trend filter + chop filter (MA100 slope) + volatility regime band (0.5–3.0% ATR) + daily MA200 regime gate · 1R stop (2×ATR), 3R target (6×ATR) · taker fees. Backtested on live Binance futures data in your browser — no server, no API key.</p>
+        <p>Strategy: Donchian 10 breakout + MA100 trend filter + chop filter (MA100 slope ≥0.05%) + volatility band (0.5–3.0% ATR) + ADX(14) ≥18 trend-strength gate + daily MA200 regime gate · 1R stop (2×ATR), 3R target (6×ATR) · net of taker fees (slippage+funding ~6% haircut applies live). Backtested on live Binance USDT-M futures data in your browser — no server, no API key.</p>
       </div>
     </section>
     <!-- Trade history panel -->

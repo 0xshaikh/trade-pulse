@@ -161,6 +161,7 @@ body {
 .signal-value.buy { color: var(--success); background: var(--success-bg); }
 .signal-value.sell { color: var(--danger); background: var(--danger-bg); }
 .signal-value.wait { color: var(--warning); background: rgba(255,170,0,0.12); }
+.signal-reason { font-size: 11px; color: var(--text-muted); max-width: 320px; line-height: 1.4; }
 .strat-stat { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; }
 .strat-stat .stat-label { font-size: 11px; color: var(--text-muted); }
 .stat-value { font-size: 15px; font-weight: 700; }

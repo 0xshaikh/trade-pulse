@@ -25,7 +25,6 @@ const ASSETS = [
   { sym: 'LINKUSDT', label: 'LINK/USDT',  color: '#2a5ada' },
   { sym: 'LTCUSDT',  label: 'LTC/USDT',   color: '#bfbbbb' },
   { sym: 'DOTUSDT',  label: 'DOT/USDT',   color: '#e6007a' },
-  { sym: 'MATICUSDT',label: 'MATIC/USDT', color: '#8247e5' },
 ];
 const TF_MAP = { '15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d' };
 const BARS = 600;          // history bars for chart + backtest (matches research window)
@@ -355,10 +354,25 @@ function updateSignalUI() {
   if (i < 1) return;
   const slope = maSlopePct(ma, close, i);
   const sv = $('signal-value');
+  const sr = $('signal-reason');
   const gate = dailyGate(state.dailyKlines, klines[i].time);
   const atrPct = atrVals[i] / close[i] * 100;
   const inBand = !ATR_BAND || (atrPct >= ATR_BAND[0] && atrPct <= ATR_BAND[1]);
   const inTrend = adxVals[i] != null && adxVals[i] >= ADX_MIN;
+  const brkUp = close[i] > dc.upper[i - 1];
+  const brkDn = close[i] < dc.lower[i - 1];
+  const reasons = [];
+  if (!inTrend) reasons.push(`ADX ${adxVals[i] == null ? '—' : adxVals[i].toFixed(0)} < ${ADX_MIN} (chop)`);
+  if (!inBand) reasons.push(`ATR ${atrPct.toFixed(1)}% outside ${ATR_BAND[0]}–${ATR_BAND[1]}%`);
+  if (Math.abs(slope) < MIN_MA_SLOPE) reasons.push(`MA100 slope ${slope >= 0 ? '+' : ''}${slope.toFixed(2)}% too flat`);
+  if (gate === 0) reasons.push('daily gate neutral');
+  if (!brkUp && !brkDn) reasons.push('price inside Donchian (no breakout)');
+  const wantLong = brkUp && slope > 0 && close[i] > ma[i] && gate !== -1;
+  const wantShort = brkDn && slope < 0 && close[i] < ma[i] && gate !== 1;
+  if ((wantLong || wantShort) && gate !== 0 && gate !== (wantLong ? -1 : 1) && (wantLong ? slope < 0 : slope > 0)) {
+    reasons.push('breakout opposite MA100 slope (counter-trend)');
+  }
+  if (sr) sr.textContent = reasons.length ? '· ' + reasons.join(' · ') : '· filters clear';
   if (inBand && inTrend && close[i] > dc.upper[i - 1] && slope > MIN_MA_SLOPE && close[i] > ma[i] && gate !== -1) {
     sv.textContent = 'BUY SIGNAL'; sv.className = 'signal-value buy';
   } else if (inBand && inTrend && close[i] < dc.lower[i - 1] && slope < -MIN_MA_SLOPE && close[i] < ma[i] && gate !== 1) {

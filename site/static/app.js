@@ -47,6 +47,7 @@ const state = {
   ws: null,
   wsSubscribed: false,
   currentAsset: null,  // active leaderboard row
+  portfolio: null,     // cached per-asset metrics for the Portfolio view
 };
 
 const $ = (id) => document.getElementById(id);
@@ -416,11 +417,13 @@ function renderTradeHistory(klines, symbol, interval) {
   table.style.display = ''; none.style.display = 'none';
   empty.classList.add('hidden');
   const body = $('history-body');
-  const rows = trades.map((t, i) => {
+  // newest-first: most recent trade at top
+  const rows = trades.slice().reverse().map((t, i) => {
     const dollar = t.net * 10000; // $10k equity base
     const dstr = (dollar >= 0 ? '+' : '−') + '$' + Math.abs(dollar).toFixed(2);
+    const num = trades.length - i; // original trade # (newest has highest)
     return `<tr>
-      <td>${i + 1}</td>
+      <td>${num}</td>
       <td>${fmtDateTime(t.entryTime)} → ${fmtDateTime(t.exitTime)}</td>
       <td><span class="side-badge ${t.dir === 1 ? 'buy' : 'sell'}">${t.dir === 1 ? 'BUY' : 'SELL'}</span></td>
       <td>${fmtPrice(t.entry)}</td>
@@ -477,10 +480,100 @@ async function loadSymbol(symbol, keepChart = false) {
   }
 }
 
+/* ==================== Portfolio (exchange-style) ==================== */
+const PORTFOLIO_BASE = 10000; // sim capital per pair
+function renderPortfolio(results) {
+  const valid = results.filter(r => !r.error && r.total > 0);
+  const totalTrades = valid.reduce((s, r) => s + r.total, 0);
+  const totalWins = valid.reduce((s, r) => s + (r.winRate / 100) * r.total, 0);
+  const overallWR = totalTrades ? (totalWins / totalTrades) * 100 : 0;
+  // per-pair P&L on $10k base (compounded)
+  const withPnl = valid.map(r => {
+    const equity = PORTFOLIO_BASE * (1 + r.netReturn / 100);
+    return { ...r, pnl: equity - PORTFOLIO_BASE };
+  });
+  const netPnl = withPnl.reduce((s, r) => s + r.pnl, 0);
+  const grossPos = withPnl.filter(r => r.pnl > 0).reduce((s, r) => s + r.pnl, 0);
+  const grossNeg = Math.abs(withPnl.filter(r => r.pnl < 0).reduce((s, r) => s + r.pnl, 0));
+  const aggPF = grossNeg > 0 ? grossPos / grossNeg : (grossPos > 0 ? Infinity : 0);
+  const sorted = withPnl.slice().sort((a, b) => b.pnl - a.pnl);
+  const best = sorted[0], worst = sorted[sorted.length - 1];
+  const avgRet = valid.length ? valid.reduce((s, r) => s + r.netReturn, 0) / valid.length : 0;
+
+  // --- summary cards ---
+  $('pf-capital').textContent = '$' + PORTFOLIO_BASE.toLocaleString();
+  $('pf-capital-sub').textContent = 'sim base · $' + PORTFOLIO_BASE.toLocaleString() + ' per pair';
+  const pnlEl = $('pf-pnl');
+  pnlEl.textContent = (netPnl >= 0 ? '+' : '−') + '$' + Math.abs(netPnl).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  pnlEl.className = 'pcard-value mono ' + (netPnl >= 0 ? 'positive' : 'negative');
+  const pnlPct = $('pf-pnl-pct');
+  pnlPct.textContent = fmtPct(avgRet) + ' avg per pair';
+  pnlPct.className = 'pcard-sub ' + (avgRet >= 0 ? 'positive' : 'negative');
+  $('pf-wr').textContent = overallWR.toFixed(0) + '%';
+  $('pf-wr-sub').textContent = totalTrades ? `${totalWins.toFixed(0)}/${totalTrades} wins` : 'no trades';
+  $('pf-trades').textContent = totalTrades;
+  $('pf-trades-sub').textContent = 'closed 4H signals';
+  const pfEl = $('pf-pf');
+  pfEl.textContent = aggPF === Infinity ? '∞' : aggPF.toFixed(2);
+  pfEl.className = 'pcard-value mono ' + (aggPF >= 1 ? 'positive' : 'negative');
+  const bestEl = $('pf-best');
+  bestEl.textContent = best && best.total ? best.label.replace('USDT', '') + ' ' + fmtPct(best.netReturn) : '—';
+  bestEl.className = 'pcard-value best-worst ' + (best && best.netReturn >= 0 ? 'positive' : 'negative');
+  const worstEl = $('pf-worst');
+  worstEl.textContent = worst && worst.total ? worst.label.replace('USDT', '') + ' ' + fmtPct(worst.netReturn) : '—';
+  worstEl.className = 'pcard-sub ' + (worst && worst.netReturn < 0 ? 'negative' : 'positive');
+
+  // --- allocation table ---
+  const body = $('alloc-body');
+  if (!body) return;
+  $('pf-loading').classList.add('hidden');
+  const maxAbs = Math.max(1, ...withPnl.map(r => Math.abs(r.pnl)));
+  body.innerHTML = withPnl.map(r => {
+    const pct = Math.abs(r.pnl) / maxAbs * 100;
+    const bar = r.pnl >= 0 ? 'pos-bar' : 'neg-bar';
+    return `<tr data-sym="${r.sym}">
+      <td><span class="asset-dot" style="background:${r.color}"></span>${r.label}</td>
+      <td>${r.total}</td>
+      <td>${r.winRate.toFixed(0)}%</td>
+      <td class="alloc-bar-wrap"><div class="alloc-bar"><span class="${bar}" style="width:${pct.toFixed(1)}%"></span></div></td>
+      <td class="${r.pnl >= 0 ? 'pos' : 'neg'}">${(r.pnl >= 0 ? '+' : '−')}$${Math.abs(r.pnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+      <td class="${r.netReturn >= 0 ? 'pos' : 'neg'}">${fmtPct(r.netReturn)}</td>
+    </tr>`;
+  }).join('');
+  // click row -> focus that pair on chart + history
+  body.querySelectorAll('tr[data-sym]').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const sym = tr.dataset.sym;
+      state.symbol = sym;
+      const sel = $('symbol-select');
+      if (sel) sel.value = sym;
+      loadSymbol(sym);
+      connectWS();
+      switchView('chart');
+    });
+  });
+}
+
+/* ==================== View tabs (exchange-style) ==================== */
+function switchView(name) {
+  ['chart', 'portfolio', 'history'].forEach(v => {
+    const view = $('view-' + v);
+    if (view) view.hidden = (v !== name);
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === name);
+    b.setAttribute('aria-selected', b.dataset.view === name ? 'true' : 'false');
+  });
+  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  // ensure chart resizes when it becomes visible
+  if (name === 'chart' && chart) setTimeout(() => { try { chart.applyOptions({}); chart.timeScale().fitContent(); } catch(e){} }, 50);
+  // refresh portfolio data each time it opens
+  if (name === 'portfolio' && state.portfolio) renderPortfolio(state.portfolio);
+}
+
 /* ==================== Leaderboard ==================== */
 async function buildLeaderboard() {
-  const tbody = $('lb-body');
-  $('lb-loading').classList.remove('hidden');
+  $('pf-loading').classList.remove('hidden');
   const results = await Promise.all(ASSETS.map(async (a) => {
     try {
       const [kl, daily] = await Promise.all([fetchKlines(a.sym, '4h', 600), fetchDaily(a.sym)]);
@@ -492,28 +585,8 @@ async function buildLeaderboard() {
     } catch (e) { return { ...a, total: 0, winRate: 0, netReturn: 0, profitFactor: 0, error: true }; }
   }));
   results.sort((a, b) => b.netReturn - a.netReturn);
-  tbody.innerHTML = '';
-  results.forEach((r, idx) => {
-    const tr = document.createElement('tr');
-    if (r.sym === state.symbol) tr.className = 'active';
-    const medal = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
-    tr.innerHTML = `
-      <td><span class="rank-badge ${medal}">${idx + 1}</span></td>
-      <td>${r.label}</td>
-      <td class="${r.netReturn >= 0 ? 'pos' : 'neg'}">${fmtPct(r.netReturn)}</td>
-      <td>${r.total ? r.winRate.toFixed(0) + '%' : '—'}</td>
-      <td>${r.total}</td>
-      <td>${r.profitFactor === Infinity ? '∞' : r.total ? r.profitFactor.toFixed(2) : '—'}</td>`;
-    tr.addEventListener('click', () => {
-      state.symbol = r.sym;
-      $('symbol-select').value = r.sym;
-      loadSymbol(r.sym);
-      document.querySelectorAll('#lb-body tr').forEach(x => x.classList.remove('active'));
-      tr.classList.add('active');
-    });
-    tbody.appendChild(tr);
-  });
-  $('lb-loading').classList.add('hidden');
+  state.portfolio = results;
+  renderPortfolio(results);
 }
 
 /* ==================== Init ==================== */
@@ -547,6 +620,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadSymbol(state.symbol);
       connectWS();
     });
+  });
+
+  // --- view tabs (desktop + mobile) ---
+  document.querySelectorAll('.tab-btn, .mnav-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
   });
 });
 

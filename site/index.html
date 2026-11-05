@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradePulse — Live Strategy Signals & Leaderboard</title>
-  <meta name="description" content="Live crypto chart with Donchian + MA100 strategy signals and a multi-asset performance leaderboard. Real-time Binance data, no API key needed.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0e1a">
+  <title>TradePulse — Live Strategy Signals · Portfolio · Leaderboard</title>
+  <meta name="description" content="Live crypto trading dashboard: Donchian + MA100 strategy signals, portfolio allocation, per-pair P&L and a multi-asset leaderboard. Real-time Binance futures data, no API key needed.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0e1a'/><path d='M25 70 L40 45 L52 58 L75 28' stroke='%2300f5ff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/><circle cx='75' cy='28' r='6' fill='%2300ff88'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-  <div class="animated-bg">
+  <div class="animated-bg" aria-hidden="true">
     <div class="bg-shape" style="top:-10%; left:-10%; width:400px; height:400px; background:#00f5ff;"></div>
     <div class="bg-shape" style="bottom:-10%; right:-5%; width:350px; height:350px; background:#0099ff; animation-delay:-8s;"></div>
     <div class="bg-shape" style="top:40%; left:55%; width:300px; height:300px; background:#00ff88; opacity:0.08; animation-delay:-14s;"></div>
@@ -21,7 +22,7 @@
   <header class="topbar">
     <div class="brand">
       <div class="brand-logo">
-        <svg viewBox="0 0 100 100" width="34" height="34">
+        <svg viewBox="0 0 100 100" width="34" height="34" aria-hidden="true">
           <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00f5ff"/><stop offset="100%" stop-color="#0099ff"/></linearGradient></defs>
           <rect width="100" height="100" rx="20" fill="#0a0e1a"/>
           <path d="M25 70 L40 45 L52 58 L75 28" stroke="url(#lg)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -30,86 +31,137 @@
       </div>
       <div class="brand-text">
         <h1>TradePulse</h1>
-        <span class="brand-sub">Live Strategy Signals · Leaderboard</span>
+        <span class="brand-sub">Live Strategy Signals · Portfolio</span>
       </div>
     </div>
-    <div class="live-indicator"><span class="pulse-dot"></span><span id="live-status">LIVE</span></div>
+    <div class="live-indicator" title="Binance futures WebSocket — live data"><span class="pulse-dot"></span><span id="live-status">LIVE</span></div>
   </header>
 
+  <!-- Desktop / tablet tabs -->
+  <nav class="tabs" id="tabs" aria-label="Main views">
+    <button class="tab-btn" data-view="chart" aria-selected="true">📈 Chart</button>
+    <button class="tab-btn" data-view="portfolio" aria-selected="false">💰 Portfolio</button>
+    <button class="tab-btn" data-view="history" aria-selected="false">📜 History</button>
+  </nav>
+
   <main class="layout">
-    <!-- Chart panel -->
-    <section class="panel chart-panel glass-card">
-      <div class="panel-head">
-        <div class="chart-controls">
-          <select id="symbol-select" class="control" aria-label="Asset"></select>
-          <div class="tf-group" role="tablist" aria-label="Timeframe">
-            <button class="tf-btn" data-tf="15m">15m</button>
-            <button class="tf-btn" data-tf="1h">1H</button>
-            <button class="tf-btn active" data-tf="4h">4H</button>
-            <button class="tf-btn" data-tf="1d">1D</button>
+    <!-- ============ CHART VIEW ============ -->
+    <section class="view" id="view-chart">
+      <div class="panel chart-panel glass-card">
+        <div class="panel-head">
+          <div class="chart-controls">
+            <select id="symbol-select" class="control" aria-label="Asset"></select>
+            <div class="tf-group" role="tablist" aria-label="Timeframe">
+              <button class="tf-btn" data-tf="15m">15m</button>
+              <button class="tf-btn" data-tf="1h">1H</button>
+              <button class="tf-btn active" data-tf="4h">4H</button>
+              <button class="tf-btn" data-tf="1d">1D</button>
+            </div>
           </div>
+          <div class="live-price" id="live-price">—</div>
         </div>
-        <div class="live-price" id="live-price">—</div>
-      </div>
 
-      <div class="chart-wrap">
-        <div id="chart"></div>
-        <div class="chart-loading" id="chart-loading"><div class="spinner"></div><span>Loading live market data…</span></div>
-      </div>
-
-      <div class="strategy-bar">
-        <div class="strat-signal" id="strat-signal">
-          <span class="signal-label">Strategy Signal</span>
-          <span class="signal-value wait" id="signal-value">SCANNING</span>
-          <span class="signal-reason" id="signal-reason"></span>
+        <div class="chart-wrap">
+          <div id="chart"></div>
+          <div class="chart-loading" id="chart-loading"><div class="spinner"></div><span>Loading live market data…</span></div>
         </div>
-        <div class="strat-stat"><span class="stat-label">Win Rate</span><span class="stat-value mono" id="stat-winrate">—</span></div>
-        <div class="strat-stat"><span class="stat-label">Trades</span><span class="stat-value mono" id="stat-trades">—</span></div>
-        <div class="strat-stat"><span class="stat-label">Net Return</span><span class="stat-value mono" id="stat-return">—</span></div>
-        <div class="strat-stat"><span class="stat-label">Profit Factor</span><span class="stat-value mono" id="stat-pf">—</span></div>
+
+        <div class="strategy-bar">
+          <div class="strat-signal" id="strat-signal">
+            <span class="signal-label">Strategy Signal</span>
+            <span class="signal-value wait" id="signal-value">SCANNING</span>
+            <span class="signal-reason" id="signal-reason"></span>
+          </div>
+          <div class="strat-stat"><span class="stat-label">Win Rate</span><span class="stat-value mono" id="stat-winrate">—</span></div>
+          <div class="strat-stat"><span class="stat-label">Trades</span><span class="stat-value mono" id="stat-trades">—</span></div>
+          <div class="strat-stat"><span class="stat-label">Net Return</span><span class="stat-value mono" id="stat-return">—</span></div>
+          <div class="strat-stat"><span class="stat-label">Profit Factor</span><span class="stat-value mono" id="stat-pf">—</span></div>
+        </div>
       </div>
     </section>
 
-    <!-- Leaderboard panel -->
-    <section class="panel leaderboard-panel glass-card">
-      <div class="panel-head">
-        <h2>🏆 Performance Leaderboard</h2>
-        <span class="panel-note">Donchian+MA100 backtest · live 4H data</span>
+    <!-- ============ PORTFOLIO VIEW ============ -->
+    <section class="view" id="view-portfolio" hidden>
+      <!-- Portfolio summary cards -->
+      <div class="portfolio-grid" id="portfolio-summary">
+        <div class="pcard glass-card">
+          <span class="pcard-label">Total Capital (sim)</span>
+          <span class="pcard-value mono" id="pf-capital">$10,000</span>
+          <span class="pcard-sub" id="pf-capital-sub">paper trading base</span>
+        </div>
+        <div class="pcard glass-card">
+          <span class="pcard-label">Net P&amp;L</span>
+          <span class="pcard-value mono" id="pf-pnl">—</span>
+          <span class="pcard-sub" id="pf-pnl-pct">—</span>
+        </div>
+        <div class="pcard glass-card">
+          <span class="pcard-label">Overall Win Rate</span>
+          <span class="pcard-value mono" id="pf-wr">—</span>
+          <span class="pcard-sub" id="pf-wr-sub">across all assets</span>
+        </div>
+        <div class="pcard glass-card">
+          <span class="pcard-label">Total Trades</span>
+          <span class="pcard-value mono" id="pf-trades">—</span>
+          <span class="pcard-sub" id="pf-trades-sub">closed 4H signals</span>
+        </div>
+        <div class="pcard glass-card">
+          <span class="pcard-label">Profit Factor</span>
+          <span class="pcard-value mono" id="pf-pf">—</span>
+          <span class="pcard-sub">gross win / gross loss</span>
+        </div>
+        <div class="pcard glass-card">
+          <span class="pcard-label">Best / Worst</span>
+          <span class="pcard-value best-worst" id="pf-best">—</span>
+          <span class="pcard-sub" id="pf-worst">—</span>
+        </div>
       </div>
-      <div class="leaderboard-body">
-        <div class="lb-loading" id="lb-loading"><div class="spinner"></div><span>Ranking assets…</span></div>
-        <table class="leaderboard" id="leaderboard">
-          <thead>
-            <tr>
-              <th>#</th><th>Asset</th><th>Return</th><th>Win%</th><th>Trades</th><th>PF</th>
-            </tr>
-          </thead>
-          <tbody id="lb-body"></tbody>
-        </table>
-      </div>
-      <div class="lb-footer">
-        <p>Strategy: Donchian 10 breakout + MA100 trend filter + chop filter (MA100 slope ≥0.05%) + volatility band (0.5–3.0% ATR) + ADX(14) ≥18 trend-strength gate + daily MA200 regime gate · 1R stop (2×ATR), 3R target (6×ATR) · net of taker fees (slippage+funding ~6% haircut applies live). Backtested on live Binance USDT-M futures data in your browser — no server, no API key.</p>
+
+      <!-- Per-pair allocation -->
+      <div class="panel leaderboard-panel glass-card">
+        <div class="panel-head">
+          <h2>💰 Portfolio Allocation &amp; Per-Pair P&amp;L</h2>
+          <span class="panel-note">strategy 4H backtest · live Binance futures data</span>
+        </div>
+        <div class="alloc-body">
+          <div class="lb-loading" id="pf-loading"><div class="spinner"></div><span>Building portfolio…</span></div>
+          <table class="alloc-table" id="alloc-table">
+            <thead>
+              <tr>
+                <th>Pair</th><th>Trades</th><th>Win%</th><th>Allocation</th><th>P&amp;L $</th><th>P&amp;L %</th>
+              </tr>
+            </thead>
+            <tbody id="alloc-body"></tbody>
+          </table>
+        </div>
       </div>
     </section>
-    <!-- Trade history panel -->
-    <section class="panel history-panel glass-card">
-      <div class="panel-head">
-        <h2>📜 Trade History <span class="history-sub" id="history-sub">—</span></h2>
-        <span class="panel-note" id="history-note">Live backtest · click a leaderboard asset or switch timeframe</span>
-      </div>
-      <div class="history-body">
-        <div class="history-empty" id="history-empty">
-          <div class="spinner"></div><span>Loading trade history…</span>
+
+    <!-- ============ HISTORY VIEW ============ -->
+    <section class="view" id="view-history" hidden>
+      <div class="panel history-panel glass-card">
+        <div class="panel-head">
+          <h2>📜 Trade History <span class="history-sub" id="history-sub">—</span></h2>
+          <span class="panel-note" id="history-note">Latest first · click a row on Portfolio to focus that pair</span>
         </div>
-        <table class="history-table" id="history-table" style="display:none">
-          <thead>
-            <tr>
-              <th>#</th><th>Date / Time (UTC)</th><th>Side</th><th>Entry</th><th>Exit</th><th>Reason</th><th>Bars Held</th><th>P&L %</th><th>P&L ($)</th>
-            </tr>
-          </thead>
-          <tbody id="history-body"></tbody>
-        </table>
-        <div class="history-none" id="history-none" style="display:none">No closed trades on this asset/timeframe yet. Try another timeframe or asset.</div>
+        <div class="history-body">
+          <div class="history-empty" id="history-empty">
+            <div class="spinner"></div><span>Loading trade history…</span>
+          </div>
+          <div class="table-scroll">
+            <table class="history-table" id="history-table" style="display:none">
+              <thead>
+                <tr>
+                  <th>#</th><th>Date / Time (UTC)</th><th>Side</th><th>Entry</th><th>Exit</th><th>Reason</th><th>Bars</th><th>P&amp;L %</th><th>P&amp;L ($)</th>
+                </tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+          <div class="history-none" id="history-none" style="display:none">No closed trades on this asset/timeframe yet. Try another timeframe or asset.</div>
+        </div>
+        <div class="lb-footer">
+          <p>Strategy: Donchian 10 breakout + MA100 trend filter + chop filter (MA100 slope ≥0.05%) + volatility band (0.5–3.0% ATR) + ADX(14) ≥18 trend-strength gate + daily MA200 regime gate · 1R stop (2×ATR), 3R target (6×ATR) · net of taker fees (slippage+funding ~6% haircut applies live). Backtested on live Binance USDT-M futures data in your browser — no server, no API key.</p>
+        </div>
       </div>
     </section>
   </main>
@@ -118,6 +170,13 @@
     <p>TradePulse · Data: <span class="mono">Binance public API</span> (real-time) · Chart: <span class="mono">TradingView Lightweight Charts</span> · Strategy engine runs client-side</p>
     <p class="disclaimer">Educational tool — not financial advice. Past performance does not guarantee future results.</p>
   </footer>
+
+  <!-- Mobile bottom nav (exchange-app style) -->
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Main views">
+    <button class="mnav-btn active" data-view="chart"><span class="mnav-ico">📈</span><span>Chart</span></button>
+    <button class="mnav-btn" data-view="portfolio"><span class="mnav-ico">💰</span><span>Portfolio</span></button>
+    <button class="mnav-btn" data-view="history"><span class="mnav-ico">📜</span><span>History</span></button>
+  </nav>
 
   <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
   <script src="static/app.js"></script>

@@ -37,6 +37,7 @@ const MIN_MA_SLOPE = 0.05; // chop filter: |MA100 slope| (as % of price over 5 b
 const DAILY_MA_N   = 200;  // daily regime gate: trade only in direction of daily MA200
 const ATR_BAND     = [0.5, 3.0]; // volatility regime: skip dead-vol (<0.5%) / blow-off (>3%) chop
 const ADX_MIN      = 18;         // trend-strength gate: only trade when ADX(14) >= 18 (cut chop)
+const DAILY_ADX_MIN = 18;        // higher-TF confirmation: daily ADX(14) >= 18 (v4 loss-cutter)
 
 /* ==================== State ==================== */
 const state = {
@@ -138,6 +139,18 @@ function dailyGate(dailyKlines, ts) {
   if (idx < DAILY_MA_N - 1 || dma[idx] == null) return 0;
   return dclose[idx] > dma[idx] ? 1 : -1;
 }
+// Higher-timeframe trend confirmation: daily ADX(14) >= DAILY_ADX_MIN at the bar for ts (v4 loss-cutter)
+// Returns null when no daily ADX data, true when confirmed trending, false when daily trend is weak (chop).
+function dailyADXGate(dailyKlines, ts) {
+  if (!dailyKlines || dailyKlines.length < 16) return null;
+  const dADX = adx(dailyKlines, 14);
+  let idx = -1;
+  for (let j = 0; j < dailyKlines.length; j++) {
+    if (dailyKlines[j].time <= ts) idx = j; else break;
+  }
+  if (idx < 0 || dADX[idx] == null) return null;
+  return dADX[idx] >= DAILY_ADX_MIN;
+}
 
 /* ==================== Strategy backtest (closed bars) ==================== */
 function backtest(klines) {
@@ -189,6 +202,9 @@ function backtest(klines) {
     const prevClose = close[i - 1];
     // Daily regime gate: only long in daily uptrend, only short in daily downtrend
     const gate = dailyGate(state.dailyKlines, klines[i].time);
+    // Higher-TF confirmation: daily trend must be strong (daily ADX>=18) — the v4 loss-cutter
+    const dADXOk = dailyADXGate(state.dailyKlines, klines[i].time);
+    if (dADXOk === false) continue;
     // Long: close breaks above PRIOR 20-bar high (no look-ahead) AND MA100 rising
     if (prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i] && gate !== -1) {
       const entry = close[i];
@@ -299,6 +315,7 @@ function renderChart(klines) {
     if (ATR_BAND && (atrPct < ATR_BAND[0] || atrPct > ATR_BAND[1])) continue;
     if (adxVals[i] == null || adxVals[i] < ADX_MIN) continue;
     const gate = dailyGate(state.dailyKlines, klines[i].time);
+    if (dailyADXGate(state.dailyKlines, klines[i].time) === false) continue;
     const isLong = prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i] && gate !== -1;
     const isShort = prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i] && gate !== 1;
     if (isLong) {
@@ -360,10 +377,13 @@ function updateSignalUI() {
   const atrPct = atrVals[i] / close[i] * 100;
   const inBand = !ATR_BAND || (atrPct >= ATR_BAND[0] && atrPct <= ATR_BAND[1]);
   const inTrend = adxVals[i] != null && adxVals[i] >= ADX_MIN;
+  const dADXOk = dailyADXGate(state.dailyKlines, klines[i].time);
+  const inDailyTrend = dADXOk === true;
   const brkUp = close[i] > dc.upper[i - 1];
   const brkDn = close[i] < dc.lower[i - 1];
   const reasons = [];
   if (!inTrend) reasons.push(`ADX ${adxVals[i] == null ? '—' : adxVals[i].toFixed(0)} < ${ADX_MIN} (chop)`);
+  if (dADXOk === false) reasons.push(`daily ADX < ${DAILY_ADX_MIN} (weak daily trend)`);
   if (!inBand) reasons.push(`ATR ${atrPct.toFixed(1)}% outside ${ATR_BAND[0]}–${ATR_BAND[1]}%`);
   if (Math.abs(slope) < MIN_MA_SLOPE) reasons.push(`MA100 slope ${slope >= 0 ? '+' : ''}${slope.toFixed(2)}% too flat`);
   if (gate === 0) reasons.push('daily gate neutral');
@@ -374,9 +394,9 @@ function updateSignalUI() {
     reasons.push('breakout opposite MA100 slope (counter-trend)');
   }
   if (sr) sr.textContent = reasons.length ? '· ' + reasons.join(' · ') : '· filters clear';
-  if (inBand && inTrend && close[i] > dc.upper[i - 1] && slope > MIN_MA_SLOPE && close[i] > ma[i] && gate !== -1) {
+  if (inBand && inTrend && inDailyTrend && close[i] > dc.upper[i - 1] && slope > MIN_MA_SLOPE && close[i] > ma[i] && gate !== -1) {
     sv.textContent = 'BUY SIGNAL'; sv.className = 'signal-value buy';
-  } else if (inBand && inTrend && close[i] < dc.lower[i - 1] && slope < -MIN_MA_SLOPE && close[i] < ma[i] && gate !== 1) {
+  } else if (inBand && inTrend && inDailyTrend && close[i] < dc.lower[i - 1] && slope < -MIN_MA_SLOPE && close[i] < ma[i] && gate !== 1) {
     sv.textContent = 'SELL SIGNAL'; sv.className = 'signal-value sell';
   } else {
     sv.textContent = 'NO TRADE'; sv.className = 'signal-value wait';

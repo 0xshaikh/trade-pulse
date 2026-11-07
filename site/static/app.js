@@ -254,21 +254,21 @@ let chart = null, candleSeries = null, donkHiSeries = null, donkLoSeries = null,
 
 function initChart() {
   chart = LightweightCharts.createChart($('chart'), {
-    layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#9ca3af', fontFamily: "'Inter', sans-serif" },
-    grid: { vertLines: { color: 'rgba(31,41,55,0.4)' }, horzLines: { color: 'rgba(31,41,55,0.4)' } },
-    rightPriceScale: { borderColor: 'rgba(0,245,255,0.15)' },
-    timeScale: { borderColor: 'rgba(0,245,255,0.15)', timeVisible: true, secondsVisible: false },
+    layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8A8A8A', fontFamily: "'Manrope', sans-serif" },
+    grid: { vertLines: { color: 'rgba(255,255,255,0.04)' }, horzLines: { color: 'rgba(255,255,255,0.04)' } },
+    rightPriceScale: { borderColor: 'rgba(255,255,255,0.08)' },
+    timeScale: { borderColor: 'rgba(255,255,255,0.08)', timeVisible: true, secondsVisible: false },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     autoSize: true,
   });
   candleSeries = chart.addCandlestickSeries({
-    upColor: '#00ff88', downColor: '#ff4444',
-    wickUpColor: '#00ff88', wickDownColor: '#ff4444',
+    upColor: '#2ECC71', downColor: '#E5484D',
+    wickUpColor: '#2ECC71', wickDownColor: '#E5484D',
     borderVisible: false,
   });
-  donkHiSeries = chart.addLineSeries({ color: '#00f5ff', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false, title: 'Donchian 20 High' });
-  donkLoSeries = chart.addLineSeries({ color: '#0099ff', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false, title: 'Donchian 20 Low' });
-  maSeries = chart.addLineSeries({ color: '#ffaa00', lineWidth: 2, priceLineVisible: false, lastValueVisible: false, title: 'MA100' });
+  donkHiSeries = chart.addLineSeries({ color: '#3FD8E8', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false, title: 'Donchian 20 High' });
+  donkLoSeries = chart.addLineSeries({ color: '#8A8A8A', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false, title: 'Donchian 20 Low' });
+  maSeries = chart.addLineSeries({ color: '#F5A623', lineWidth: 2, priceLineVisible: false, lastValueVisible: false, title: 'MA100' });
 }
 
 /* ==================== Render chart ==================== */
@@ -308,10 +308,10 @@ function renderChart(klines) {
     const isLong = prevClose <= dc.upper[i - 1] && close[i] > dc.upper[i - 1] && slope > 0 && close[i] > ma[i] && gate === 1;
     const isShort = prevClose >= dc.lower[i - 1] && close[i] < dc.lower[i - 1] && slope < 0 && close[i] < ma[i] && gate === -1;
     if (isLong) {
-      sigMarkers.push({ time: klines[i].time, position: 'belowBar', color: '#00ff88', shape: 'arrowUp', text: 'BUY' });
+      sigMarkers.push({ time: klines[i].time, position: 'belowBar', color: '#2ECC71', shape: 'arrowUp', text: 'BUY' });
       lastTrade = i + DONCHIAN_N * 2; // don't re-signal inside channel period
     } else if (isShort) {
-      sigMarkers.push({ time: klines[i].time, position: 'aboveBar', color: '#ff4444', shape: 'arrowDown', text: 'SELL' });
+      sigMarkers.push({ time: klines[i].time, position: 'aboveBar', color: '#E5484D', shape: 'arrowDown', text: 'SELL' });
       lastTrade = i + DONCHIAN_N * 2;
     }
   }

@@ -152,7 +152,12 @@ body{font-family:'Suisse Intl',-apple-system,BlinkMacSystemFont,sans-serif;-webk
 .panel h3 .tag{font-size:10px;font-weight:450;color:#0A0707;background:#E9E9E9;border-radius:6px;padding:5px 7px;line-height:10px}
 .panel h3 .tag.live{background:#4ade80}
 .chart-wrap{position:relative;height:380px;background:rgba(0,0,0,.2);border-radius:14px;overflow:hidden}
-.chart-wrap canvas{width:100%;height:100%;display:block}
+.chart-wrap #chart{position:absolute;top:0;left:0;right:0;bottom:0}
+.chart-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.tf-switch{display:flex;gap:4px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px}
+.tf-btn{font-size:11px;font-weight:500;padding:5px 10px;border-radius:6px;border:0;background:transparent;color:rgba(255,255,255,.6);cursor:pointer;font-family:inherit}
+.tf-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+.tf-btn.active{background:rgba(255,255,255,.14);color:#fff}
 .legend{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
 .legend span{color:rgba(255,255,255,.6);font-size:12px;display:flex;align-items:center;gap:6px}
 .legend i{width:14px;height:2px;display:inline-block;border-radius:2px}
@@ -291,8 +296,16 @@ tr.loss td.r{color:#f87171;font-weight:450}
   <div class="grid">
     <div>
       <div class="panel">
-        <h3>Price Chart — 15M <span class="tag live" id="pairTag">XAUUSDT · 15M</span></h3>
-        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+        <div class="chart-head">
+          <h3>Price Chart <span class="tag live" id="pairTag">XAUUSDT · 15M</span></h3>
+          <div class="tf-switch">
+            <button class="tf-btn active" data-tf="15m" onclick="setTf('15m')">15M</button>
+            <button class="tf-btn" data-tf="1h" onclick="setTf('1h')">1H</button>
+            <button class="tf-btn" data-tf="4h" onclick="setTf('4h')">4H</button>
+            <button class="tf-btn" data-tf="1d" onclick="setTf('1d')">1D</button>
+          </div>
+        </div>
+        <div class="chart-wrap"><div id="chart"></div></div>
         <div class="legend">
           <span><i style="background:#4ade80"></i>4H support (long)</span>
           <span><i style="background:#f87171"></i>4H resistance (short)</span>
@@ -340,6 +353,7 @@ tr.loss td.r{color:#f87171;font-weight:450}
 
 <div class="toast" id="toast"></div>
 
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 /* ============ HERO: BAR_HEIGHTS (exact 32 values) ============ */
 var BAR_HEIGHTS=[23,40,53,40,33,14,7,17,75,65,88,75,65,47,33,88,4,7,9,14,95,65,79,37,7,40,17,20,62,47,92,72];
@@ -395,27 +409,90 @@ function loadData(){
     .catch(function(e){console.error(e);return false;});
 }
 
-/* ============ CHART ============ */
-var cv=document.getElementById('chart'),ctx=cv.getContext('2d');
-function dpr(){return window.devicePixelRatio||1;}
-function drawChart(){
-  var wrap=cv.parentElement,W=wrap.clientWidth,H=wrap.clientHeight;
-  cv.width=W*dpr();cv.height=H*dpr();ctx.setTransform(dpr(),0,0,dpr(),0,0);ctx.clearRect(0,0,W,H);
-  if(!bars15.length)return;
-  var view=bars15.slice(-160),lo=Infinity,hi=-Infinity;
-  view.forEach(function(b){lo=Math.min(lo,b.l);hi=Math.max(hi,b.h);});
-  var tnow=bars15[bars15.length-1].t;
+/* ============ LIVE TRADINGVIEW-STYLE CHART (lightweight-charts) ============ */
+var lwc=window.LightweightCharts,chart=null,candleSeries=null,volSeries=null,tlSeries=null;
+var chartTf='15m',chartKlines=[],ws=null;
+
+function initChart(){
+  if(!lwc||!document.getElementById('chart'))return false;
+  chart=lwc.createChart(document.getElementById('chart'),{
+    autoSize:true,
+    layout:{background:{type:'solid',color:'transparent'},textColor:'#c9c9d6',fontFamily:'Suisse Intl,sans-serif',fontSize:11},
+    grid:{vertLines:{color:'rgba(255,255,255,.05)'},horzLines:{color:'rgba(255,255,255,.05)'}},
+    crosshair:{mode:lwc.CrosshairMode.Normal},
+    rightPriceScale:{borderColor:'rgba(255,255,255,.1)',scaleMargins:{top:.08,bottom:.22}},
+    timeScale:{borderColor:'rgba(255,255,255,.1)',timeVisible:true,secondsVisible:false,rightOffset:6,barSpacing:7,minBarSpacing:2}
+  });
+  candleSeries=chart.addCandlestickSeries({upColor:'#4ade80',downColor:'#f87171',borderUpColor:'#4ade80',borderDownColor:'#f87171',wickUpColor:'#4ade80',wickDownColor:'#f87171'});
+  volSeries=chart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:''});
+  chart.priceScale('').applyOptions({scaleMargins:{top:.8,bottom:0}});
+  tlSeries=chart.addLineSeries({color:'rgba(74,222,128,.85)',lineWidth:2,lineStyle:lwc.LineStyle.Dashed,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  return true;
+}
+function toCandle(k){return{time:Math.round(k.t/1000),open:k.o,high:k.h,low:k.l,close:k.c};}
+function loadChartData(){
+  return fetchKlines(pair,chartTf,500).then(function(k){chartKlines=k;return true;}).catch(function(){return false;});
+}
+function renderChart(){
+  if(!chart||!candleSeries)return;
+  candleSeries.setData(chartKlines.map(toCandle));
+  volSeries.setData(chartKlines.map(function(k){return{time:Math.round(k.t/1000),value:k.v,color:k.c>=k.o?'rgba(74,222,128,.35)':'rgba(248,113,113,.35)'};}));
+  drawTrendline();
+  chart.timeScale().fitContent();
+}
+function drawTrendline(){
+  if(!tlSeries||!bars4h.length)return;
+  var tnow=bars15.length?bars15[bars15.length-1].t:null;
   var tl=tlFrom(bars4h,K,tnow,lastSig&&lastSig.dir==='short'?'high':'low');
-  if(tl){var tv=tlVal(tl,tnow);lo=Math.min(lo,tv-(hi-lo)*0.1);hi=Math.max(hi,tv+(hi-lo)*0.1);}
-  var pad=6,ch=H-2*pad,px=W/view.length;
-  function y(v){return H-pad-(v-lo)/(hi-lo)*ch;}
-  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;
-  for(var g=1;g<5;g++){ctx.beginPath();ctx.moveTo(0,H/5*g);ctx.lineTo(W,H/5*g);ctx.stroke();}
-  view.forEach(function(b,i){var x=i*px+px/2,up=b.c>=b.o;ctx.strokeStyle=up?'#4ade80':'#f87171';ctx.fillStyle=up?'#4ade80':'#f87171';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y(b.h));ctx.lineTo(x,y(b.l));ctx.stroke();var bw=Math.max(1,px*0.6);ctx.fillRect(x-bw/2,y(Math.max(b.o,b.c)),bw,Math.max(1,y(Math.min(b.o,b.c))-y(Math.max(b.o,b.c))));});
-  if(tl){var v0=tlVal(tl,bars15[0].t),v1=tlVal(tl,tnow);ctx.strokeStyle=lastSig&&lastSig.dir==='short'?'rgba(248,113,113,.8)':'rgba(74,222,128,.8)';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(0,y(v0));ctx.lineTo(W,y(v1));ctx.stroke();ctx.setLineDash([]);}
-  if(lastSig){var x2=view.length*px-px/2;ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(x2,y(lastSig.zone),4,0,7);ctx.fill();ctx.strokeStyle='#fbbf24';ctx.lineWidth=1;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(x2,y(lastSig.zone));ctx.lineTo(x2,y(lastSig.zone)+(lastSig.dir==='long'?-30:30));ctx.stroke();ctx.setLineDash([]);}
-  var lp=view[view.length-1].c;ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1;ctx.setLineDash([2,4]);ctx.beginPath();ctx.moveTo(0,y(lp));ctx.lineTo(W,y(lp));ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='10px Suisse Intl,sans-serif';ctx.fillText(fmt(lp,2),W-64,Math.max(12,y(lp)-4));
+  var pts=[];
+  if(tl&&chartKlines.length){
+    for(var i=0;i<chartKlines.length;i++){
+      var tms=chartKlines[i].t;
+      if(tms>=tl.t1){pts.push({time:Math.round(tms/1000),value:tlVal(tl,tms)});}
+    }
+  }
+  tlSeries.setData(pts);
+  tlSeries.applyOptions({color:lastSig&&lastSig.dir==='short'?'rgba(248,113,113,.85)':'rgba(74,222,128,.85)'});
+}
+function updateLastKline(k){
+  if(!chartKlines.length)return;
+  var last=chartKlines[chartKlines.length-1];
+  if(k.t===last.t){chartKlines[chartKlines.length-1]=k;}
+  else if(k.t>last.t){chartKlines.push(k);}
+  if(candleSeries){candleSeries.update(toCandle(k));}
+  if(volSeries){volSeries.update({time:Math.round(k.t/1000),value:k.v,color:k.c>=k.o?'rgba(74,222,128,.35)':'rgba(248,113,113,.35)'});}
+  drawTrendline();
+}
+function connectWS(){
+  if(ws)try{ws.close();}catch(e){}
+  if(!window.WebSocket)return;
+  var sym=pair.toLowerCase();
+  try{ws=new WebSocket('wss://fstream.binance.com/ws/'+sym+'@kline_'+chartTf);}catch(e){return;}
+  ws.onmessage=function(ev){
+    try{
+      var m=JSON.parse(ev.data);if(!m.k)return;
+      var k={t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v};
+      updateLastKline(k);
+      if(bars15.length){var lb=bars15[bars15.length-1];
+        if(k.t===lb.t){bars15[bars15.length-1]=k;}
+        else if(k.t>lb.t){bars15.push(k);}}
+    }catch(e){}
+  };
+  ws.onclose=function(){ws=null;setTimeout(connectWS,5000);};
+  ws.onerror=function(){try{ws.close();}catch(e){}};
+}
+function refreshChartLive(){
+  fetchKlines(pair,chartTf,2).then(function(k){
+    if(!k.length)return;
+    var lastK=k[k.length-1];
+    if(chartKlines.length&&lastK.t>=chartKlines[chartKlines.length-1].t){updateLastKline(lastK);}
+  }).catch(function(){});
+}
+function setTf(tf){
+  chartTf=tf;
+  document.querySelectorAll('.tf-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-tf')===tf);});
+  document.getElementById('pairTag').textContent=pair+' · '+tf.toUpperCase();
+  loadChartData().then(function(){renderChart();connectWS();});
 }
 
 /* ============ UI UPDATE ============ */
@@ -484,7 +561,6 @@ function updateUI(){
   hist.slice().reverse().forEach(function(h){var tr=document.createElement('tr');tr.className=h.rR>0?'win':'loss';tr.innerHTML='<td>'+h.pair+'</td><td style="color:'+(h.dir==='long'?'#4ade80':'#f87171')+'">'+h.dir.toUpperCase()+'</td><td>'+fmt(h.entry,2)+'</td><td>'+fmt(h.exit,2)+'</td><td class="r">'+(h.rR>=0?'+':'')+h.rR.toFixed(2)+'R</td><td>'+h.reason+'</td><td>'+h.bars+'</td>';tb.appendChild(tr);});
   document.getElementById('histCount').textContent=hist.length;
   document.getElementById('histEmpty').style.display=hist.length?'none':'block';
-  drawChart();
 }
 function takeTrade(){
   if(!lastSig||openState)return;
@@ -520,16 +596,20 @@ function setPair(p){
   pair=p;document.getElementById('btnXAU').classList.toggle('active',p==='XAUUSDT');
   document.getElementById('btnBTC').classList.toggle('active',p==='BTCUSDT');
   loadData().then(function(){updateUI();});
+  loadChartData().then(function(){renderChart();connectWS();});
 }
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
 
 /* ============ BOOT ============ */
 function boot(){
+  initChart();
   loadData().then(function(ok){
     if(!ok){document.getElementById('sSigSub').textContent='Binance API unreachable';}
     updateUI();
   });
+  loadChartData().then(function(){renderChart();connectWS();});
   setInterval(function(){checkOpenTrade();loadData().then(function(){updateUI();});},30000);
+  setInterval(refreshChartLive,15000);
 }
 boot();
 </script>

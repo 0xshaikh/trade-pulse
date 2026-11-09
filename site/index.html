@@ -15,13 +15,11 @@ body{font-family:'Suisse Intl',-apple-system,BlinkMacSystemFont,sans-serif;-webk
 @keyframes fade-left{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes fade-right{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes fade-scale{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
-@keyframes bar-grow{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
 .animate-fade-up{animation:fade-up .8s cubic-bezier(.16,1,.3,1) forwards}
 .animate-fade-down{animation:fade-down .7s cubic-bezier(.16,1,.3,1) forwards}
 .animate-fade-left{animation:fade-left .8s cubic-bezier(.16,1,.3,1) forwards}
 .animate-fade-right{animation:fade-right .8s cubic-bezier(.16,1,.3,1) forwards}
 .animate-fade-scale{animation:fade-scale .9s cubic-bezier(.16,1,.3,1) forwards}
-.animate-bar-grow{animation:bar-grow .6s cubic-bezier(.16,1,.3,1) forwards;opacity:0}
 .hero{position:relative;width:100%;height:100vh;overflow:hidden;background:#080A19}
 .hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .hero-content{position:relative;z-index:10;height:100%;display:flex;flex-direction:column}
@@ -68,6 +66,7 @@ body{font-family:'Suisse Intl',-apple-system,BlinkMacSystemFont,sans-serif;-webk
 .rev-badge{padding:7px 6px;background:rgba(255,255,255,.2);border-radius:6px;color:#fff;font-size:12px;font-weight:450;line-height:14px}
 .rev-cap{color:rgba(255,255,255,.8);font-size:12px;font-weight:450;line-height:14px;opacity:.7}
 .chart-block{position:relative}
+.chart-block svg{width:100%;height:80px;display:block;position:relative;z-index:1}
 .chart-bars{display:flex;align-items:flex-end;gap:1.5px;height:80px}
 .chart-bars .bar{flex:1;border-radius:.5px;transform-origin:bottom}
 .chart-grid{position:absolute;inset:0;pointer-events:none}
@@ -244,9 +243,9 @@ tr.loss td.r{color:#f87171;font-weight:450}
             <p class="rev-amt"><span class="int" id="heroEq">$1,000</span><span class="cents">.00</span></p>
             <div class="rev-delta"><span class="rev-badge" id="heroWr">+0%</span><span class="rev-cap">win rate target 70–80%</span></div>
             <div class="chart-block">
-              <div class="chart-bars" id="heroBars"></div>
               <div class="chart-grid"><span class="gl" style="left:20%"></span><span class="gl" style="left:40%"></span><span class="gl" style="left:60%"></span><span class="gl" style="left:80%"></span><span class="gl" style="left:100%"></span></div>
-              <div class="chart-axis"><span>10:00</span><span>12:00</span><span>14:00</span><span>16:00</span><span>16:00</span></div>
+              <svg id="heroEquity" viewBox="0 0 300 70" preserveAspectRatio="none" aria-label="Paper equity curve"></svg>
+              <div class="chart-axis"><span id="heroEqCap">no trades yet · equity flat at start</span></div>
             </div>
           </div>
         </div>
@@ -355,12 +354,46 @@ tr.loss td.r{color:#f87171;font-weight:450}
 
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
-/* ============ HERO: BAR_HEIGHTS (exact 32 values) ============ */
-var BAR_HEIGHTS=[23,40,53,40,33,14,7,17,75,65,88,75,65,47,33,88,4,7,9,14,95,65,79,37,7,40,17,20,62,47,92,72];
-var MH=Math.max.apply(null,BAR_HEIGHTS);
-var hb=document.getElementById('heroBars');
-BAR_HEIGHTS.forEach(function(h,i){var d=document.createElement('div');d.className='bar animate-bar-grow';d.style.height=(h/MH*100)+'%';d.style.backgroundColor=i>=28?'rgba(255,255,255,0.1)':'#fff';d.style.animationDelay=(1100+i*30)+'ms';hb.appendChild(d);});
-document.querySelectorAll('.chart-axis span').forEach(function(s,i){s.style.opacity=i>=3?0.4:1;});
+/* ============ HERO: REAL EQUITY CURVE (from paper trades, not decorative) ============ */
+var CAP=1000;
+function drawHeroEquity(){
+  var el=document.getElementById('heroEquity');
+  if(!el)return;
+  // build equity series: start at CAP, one point per closed trade, + live open position
+  var pts=[{eq:CAP}],e=CAP;
+  hist.forEach(function(h){e+=h.rR*h.riskUsd;pts.push({eq:e});});
+  var liveEq=e;
+  if(openState&&bars15.length){var live=currentPrice();var d=openState.dir==='long'?(live-openState.entry):(openState.entry-live);liveEq=e+d*openState.size;pts.push({eq:liveEq});}
+  var W=300,H=70,pad=6,n=pts.length;
+  var lo=Math.min.apply(null,pts.map(function(p){return p.eq;})),hi=Math.max.apply(null,pts.map(function(p){return p.eq;}));
+  lo=Math.min(lo,CAP);hi=Math.max(hi,CAP);
+  var rng=(hi-lo)||1;lo-=rng*0.15;hi+=rng*0.15;rng=hi-lo;
+  function x(i){return n<=1?pad:i*(W-2*pad)/(n-1)+pad;}
+  function y(v){return H-pad-(v-lo)/rng*(H-2*pad);}
+  var line='',area='';
+  if(n>=2){
+    for(var i=0;i<n;i++){line+=(i?'L':'M')+x(i).toFixed(1)+' '+y(pts[i].eq).toFixed(1)+' ';}
+    area=line+'L'+x(n-1).toFixed(1)+' '+(H-pad)+' L'+x(0).toFixed(1)+' '+(H-pad)+' Z';
+  }else{
+    var yb=y(CAP);line='M'+pad+' '+yb+' L'+(W-pad)+' '+yb; // flat baseline: no trades
+  }
+  var up=liveEq>=CAP,col=up?'#4ade80':'#f87171';
+  el.innerHTML='<defs><linearGradient id="eqgrad" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0%" stop-color="'+col+'" stop-opacity="0.35"/><stop offset="100%" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'
+    +(n>=2?'<path d="'+area+'" fill="url(#eqgrad)"/>':'')
+    +'<line x1="'+pad+'" y1="'+y(CAP)+'" x2="'+(W-pad)+'" y2="'+y(CAP)+'" stroke="rgba(255,255,255,.18)" stroke-dasharray="3 3"/>'
+    +'<path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/>'
+    +(n>=2?'<circle cx="'+x(n-1)+'" cy="'+y(liveEq)+'" r="2.5" fill="'+col+'"/>':'');
+  var cap=document.getElementById('heroEqCap');
+  if(cap){
+    if(hist.length||openState){
+      var dEq=liveEq-CAP;
+      cap.textContent=hist.length+' trades · '+(dEq>=0?'+':'')+dEq.toFixed(0)+'$ vs start';
+    }else{
+      cap.textContent='no trades yet · equity flat at start';
+    }
+  }
+}
 
 /* mobile menu */
 var ham=document.getElementById('hamburger'),ov=document.getElementById('mobileOverlay');
@@ -395,7 +428,7 @@ try{hist=JSON.parse(localStorage.getItem('tp_hist')||'[]');}catch(e){hist=[];}
 try{openState=JSON.parse(localStorage.getItem('tp_open')||'null');}catch(e){openState=null;}
 function saveState(){try{localStorage.setItem('tp_hist',JSON.stringify(hist));localStorage.setItem('tp_open',JSON.stringify(openState));}catch(e){}}
 function currentPrice(){var b=bars15[bars15.length-1];return b?b.c:null;}
-function recalcEq(){var e=1000;hist.forEach(function(h){e+=h.rR*h.riskUsd;});return e;}
+function recalcEq(){var e=CAP;hist.forEach(function(h){e+=h.rR*h.riskUsd;});return e;}
 
 /* ============ BINANCE DATA ============ */
 function fetchKlines(sym,interval,limit){
@@ -511,6 +544,8 @@ function updateUI(){
   document.getElementById('sOpen').textContent=(openState?1:0)+' open';
   document.getElementById('sWr').textContent=wr==null?'—':wr.toFixed(1)+'%';
   if(wr!=null){document.getElementById('sWrFill').style.width=Math.min(100,wr)+'%';document.getElementById('heroWr').textContent=(wr>=70?'+':'+')+wr.toFixed(0)+'%'+(wr>=70?' (TARGET HIT)':'');}
+  else{document.getElementById('heroWr').textContent='—';}
+  drawHeroEquity();
   document.getElementById('sPf').textContent=pf==null?'—':(pf===Infinity?'∞':pf.toFixed(2));
   var netR=closed.reduce(function(s,h){return s+h.rR;},0);
   document.getElementById('sPfSub').textContent='net R '+netR.toFixed(1);

@@ -423,12 +423,18 @@ function lastSignal(){
 }
 
 /* ============ PAPER TRADE ENGINE ============ */
-var eq=1000,hist=[];
-try{hist=JSON.parse(localStorage.getItem('tp_hist')||'[]');}catch(e){hist=[];}
-try{openState=JSON.parse(localStorage.getItem('tp_open')||'null');}catch(e){openState=null;}
-function saveState(){try{localStorage.setItem('tp_hist',JSON.stringify(hist));localStorage.setItem('tp_open',JSON.stringify(openState));}catch(e){}}
+var eq=1000,hist=[],botOpen={},cap=1000;
+function saveState(){}
+function loadTrades(){
+  return fetch('data/trades.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+    if(!d)return;
+    hist=d.hist||[];cap=d.cap||1000;botOpen=d.open||{};
+    openState=botOpen[pair]||null;
+    updateUI();
+  }).catch(function(){});
+}
 function currentPrice(){var b=bars15[bars15.length-1];return b?b.c:null;}
-function recalcEq(){var e=CAP;hist.forEach(function(h){e+=h.rR*h.riskUsd;});return e;}
+function recalcEq(){var e=cap;hist.forEach(function(h){e+=h.rR*h.riskUsd;});return e;}
 
 /* ============ BINANCE DATA ============ */
 function fetchKlines(sym,interval,limit){
@@ -565,8 +571,8 @@ function updateUI(){
     document.getElementById('sSig').textContent=sig.dir==='long'?'LONG':'SHORT';
     document.getElementById('sSig').className='val '+(sig.dir==='long'?'good':'bad');
     document.getElementById('sSigSub').textContent='15M signal live';
-    document.getElementById('takeBtn').disabled=!!openState;
-    document.getElementById('takeBtn').textContent=openState?'Trade open':'Take Trade';
+    document.getElementById('takeBtn').disabled=true;
+    document.getElementById('takeBtn').textContent='Auto-Bot Trading';
   }else{
     sigTag.textContent='IDLE';sigTag.className='tag';
     document.getElementById('sigTrend').textContent='—';document.getElementById('sigTrend').className='v';
@@ -577,7 +583,7 @@ function updateUI(){
     document.getElementById('sSig').textContent='—';document.getElementById('sSig').className='val';
     document.getElementById('sSigSub').textContent='no setup right now';
     document.getElementById('takeBtn').disabled=true;
-    document.getElementById('takeBtn').textContent='No Signal';
+    document.getElementById('takeBtn').textContent='Auto-Bot Trading';
   }
   var ot=document.getElementById('openTrade');
   if(openState){var live=currentPrice();var d=openState.dir==='long'?(live-openState.entry):(openState.entry-live);var pnl=d*openState.size;var pnlR=d/openState.risk;
@@ -589,7 +595,7 @@ function updateUI(){
       +'<div class="row"><span class="k">Target 2 (15R)</span><span class="v">'+fmt(openState.tp2,2)+'</span></div>'
       +'<div class="row"><span class="k">Live price</span><span class="v">'+fmt(live,2)+'</span></div>'
       +'<div class="row"><span class="k">Unrealized</span><span class="v '+(pnl>=0?'up':'dn')+'">$'+fmt(pnl,0)+' ('+(pnlR>=0?'+':'')+pnlR.toFixed(2)+'R)</span></div>'
-      +'<div style="margin-top:12px"><button class="btn ghost" onclick="closeTrade(\'manual\')" style="width:100%">Close Now ('+(pnlR>=0?'+':'')+pnlR.toFixed(2)+'R)</button></div>'
+      +'<div class="note" style="margin-top:12px">Managed by the auto-bot — closes automatically at stop or target.</div>'
       +'</div>';
   }else{ot.innerHTML='<div class="empty">No open position. Wait for a signal, then take it.</div>';}
   var tb=document.getElementById('histBody');tb.innerHTML='';
@@ -597,39 +603,13 @@ function updateUI(){
   document.getElementById('histCount').textContent=hist.length;
   document.getElementById('histEmpty').style.display=hist.length?'none':'block';
 }
-function takeTrade(){
-  if(!lastSig||openState)return;
-  var risk=lastSig.risk;var size=(eq*0.01)/risk;
-  openState={pair:pair,dir:lastSig.dir,entry:lastSig.entry,stop:lastSig.stop,tp1:lastSig.tp1,tp2:lastSig.tp2,risk:risk,size:size,entryT:lastSig.at};
-  saveState();updateUI();toast((lastSig.dir==='long'?'LONG':'SHORT')+' opened @ '+fmt(lastSig.entry,2));
-}
-function closeTrade(reason,exitP){
-  if(!openState)return;
-  var live=currentPrice();var exit=exitP==null?live:exitP;
-  var d=openState.dir==='long'?(exit-openState.entry):(openState.entry-exit);
-  var rR=d/openState.risk;
-  var feesR=ROUND_TRIP*openState.entry/openState.risk;
-  var netR=rR-feesR;
-  hist.push({pair:openState.pair,dir:openState.dir,entry:openState.entry,exit:exit,rR:netR,reason:reason,size:openState.size,riskUsd:openState.size*openState.risk,bars:Math.round((Date.now()/1000-openState.entryT)/(15*60))});
-  openState=null;saveState();updateUI();
-  toast('Trade closed: '+(netR>=0?'+':'')+netR.toFixed(2)+'R ('+reason+')');
-}
-function checkOpenTrade(){
-  if(!openState||!bars15.length)return;
-  var b=bars15[bars15.length-1];
-  if(openState.dir==='long'){
-    if(b.l<=openState.stop){closeTrade('stop');return;}
-    if(b.h>=openState.tp2){closeTrade('TP2 (15R)');return;}
-    if(b.h>=openState.tp1){closeTrade('TP1 (2R)');return;}
-  }else{
-    if(b.h>=openState.stop){closeTrade('stop');return;}
-    if(b.l<=openState.tp2){closeTrade('TP2 (15R)');return;}
-    if(b.l<=openState.tp1){closeTrade('TP1 (2R)');return;}
-  }
-}
+function takeTrade(){toast('Auto-Bot runs the trades — signals are taken automatically on candle close.');}
+function closeTrade(reason,exitP){toast('Managed by the auto-bot.');}
+function checkOpenTrade(){/* auto-bot manages open positions */}
 function setPair(p){
   pair=p;document.getElementById('btnXAU').classList.toggle('active',p==='XAUUSDT');
   document.getElementById('btnBTC').classList.toggle('active',p==='BTCUSDT');
+  openState=botOpen[pair]||null;
   loadData().then(function(){updateUI();});
   loadChartData().then(function(){renderChart();connectWS();});
 }
@@ -640,10 +620,10 @@ function boot(){
   initChart();
   loadData().then(function(ok){
     if(!ok){document.getElementById('sSigSub').textContent='Binance API unreachable';}
-    updateUI();
+    updateUI();loadTrades();
   });
   loadChartData().then(function(){renderChart();connectWS();});
-  setInterval(function(){checkOpenTrade();loadData().then(function(){updateUI();});},30000);
+  setInterval(loadTrades,30000);
   setInterval(refreshChartLive,15000);
 }
 boot();

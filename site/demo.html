@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo Bot — Multi-Asset Paper Trades | Trade Pulse</title>
+<meta name="description" content="Live multi-asset demo bot trades: equity, open positions and closed-trade history for the 10-asset paper bot (BTC, ETH, SOL, FX, Gold, Silver, Oil).">
+<link href="https://db.onlinewebfonts.com/c/13ab13418f633c1b0516fed6e30bedbc?family=Suisse+Int%27l" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Suisse Intl',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased;background:#080A19;color:#fff;min-height:100vh}
+.wrap{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .dot{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#E9E9E9,#b8b8b8);display:grid;place-items:center;color:#080A19;font-weight:700;font-size:15px}
+.brand b{font-size:21px;font-weight:500;letter-spacing:-.02em}
+.brand span{color:rgba(255,255,255,.55);font-size:13px}
+.navlinks{display:flex;gap:8px;flex-wrap:wrap}
+.navlinks a{color:rgba(255,255,255,.75);font-size:13.5px;font-weight:450;text-decoration:none;padding:9px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);transition:.2s}
+.navlinks a:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+.navlinks a.on{background:rgba(255,255,255,.1);color:#fff}
+h1{font-size:30px;font-weight:400;letter-spacing:-.02em;line-height:1.1;margin-bottom:8px}
+.sub{color:rgba(255,255,255,.7);font-size:14.5px;line-height:1.5;max-width:640px;margin-bottom:26px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:26px}
+.stat{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:18px}
+.stat .lbl{color:rgba(255,255,255,.6);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.stat .val{font-size:24px;font-weight:450;letter-spacing:-.01em}
+.stat .val.up{color:#4ade80}
+.stat .val.down{color:#f87171}
+.stat .val.flat{color:#fff}
+.stat .sub{color:rgba(255,255,255,.5);font-size:12px;margin-top:6px;margin-bottom:0}
+.card{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:22px;margin-bottom:20px}
+.card h2{font-size:15px;font-weight:500;letter-spacing:-.01em;margin-bottom:16px;display:flex;align-items:center;gap:9px}
+.card h2 .badge{font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
+.pos{border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,.02)}
+.pos:last-child{margin-bottom:0}
+.pos-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.pos-sym{font-size:16px;font-weight:500}
+.pos-dir{font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px}
+.pos-dir.short{background:rgba(248,113,113,.14);color:#f87171}
+.pos-dir.long{background:rgba(74,222,128,.14);color:#4ade80}
+.pos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.pos-grid .cell{background:rgba(255,255,255,.04);border-radius:10px;padding:10px 12px}
+.pos-grid .cell .k{color:rgba(255,255,255,.5);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.pos-grid .cell .v{font-size:15px;font-weight:450}
+.empty{color:rgba(255,255,255,.55);font-size:14px;padding:14px 4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.1);white-space:nowrap}
+td{padding:11px 8px;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap}
+td.sym{font-weight:500}
+.dir{font-weight:600}
+.dir.s{color:#f87171}.dir.l{color:#4ade80}
+.ret{font-weight:500}
+.ret.p{color:#4ade80}.ret.n{color:#f87171}
+.tbl-scroll{overflow-x:auto}
+.meta{color:rgba(255,255,255,.4);font-size:12px;margin-top:14px;line-height:1.6}
+@media(max-width:520px){h1{font-size:24px}.stat .val{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <div class="dot">T</div>
+      <div><b>Trade Pulse</b><br><span>Demo Bot Dashboard</span></div>
+    </div>
+    <div class="navlinks">
+      <a href="index.html">Trade Pulse Bot</a>
+      <a class="on" href="demo.html">Demo Bot</a>
+    </div>
+  </div>
+
+  <h1>Multi-Asset Demo Bot</h1>
+  <p class="sub">The separate 10-asset paper bot (BTC, ETH, SOL, FX, Gold, Silver, WTI &amp; Brent Oil) that runs 24/7 on the same server. These are <b>not</b> the Trade Pulse XAUUSDT/BTCUSDT signals — this is its own engine, shown here so you can see every trade in one place.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">Demo Equity</div><div class="val flat" id="sEq">—</div><div class="sub">started $9,800</div></div>
+    <div class="stat"><div class="lbl">Day P&amp;L</div><div class="val flat" id="sDay">—</div><div class="sub">today, realized</div></div>
+    <div class="stat"><div class="lbl">Open Positions</div><div class="val flat" id="sOpen">—</div><div class="sub">right now</div></div>
+    <div class="stat"><div class="lbl">Closed Trades</div><div class="val flat" id="sClosed">—</div><div class="sub">all time</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Open Positions <span class="badge" id="openBadge">0</span></h2>
+    <div id="openBox"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Closed Trade History <span class="badge" id="histBadge">0</span></h2>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Closed</th><th>Pair</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Return</th><th>Equity</th></tr></thead>
+        <tbody id="histBody"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="meta" id="meta">Refreshing automatically…</p>
+</div>
+
+<script>
+function fmtMoney(x){return '$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtPct(x){var s=Number(x);return (s>=0?'+':'')+s.toFixed(2)+'%';}
+function fmtT(ts){try{var d=new Date(ts);return d.toUTCString().slice(5,17)+' UTC';}catch(e){return ts;}}
+function load(){
+  return fetch('data/demo-trader.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+    var eq=document.getElementById('sEq'),day=document.getElementById('sDay'),op=document.getElementById('sOpen'),cl=document.getElementById('sClosed');
+    if(d.equity!=null){eq.textContent=fmtMoney(d.equity);eq.className='val flat';}
+    if(d.day_realized_pct!=null){var dp=Number(d.day_realized_pct);day.textContent=fmtPct(dp);day.className='val '+(dp>0?'up':dp<0?'down':'flat');}
+    var open=d.open||[];
+    op.textContent=open.length;op.className='val '+(open.length?'up':'flat');
+    var hist=d.history||[];
+    cl.textContent=hist.length;cl.className='val flat';
+    document.getElementById('openBadge').textContent=open.length;
+    document.getElementById('histBadge').textContent=hist.length;
+    var ob=document.getElementById('openBox');
+    if(!open.length){ob.innerHTML='<div class="empty">No open positions right now.</div>';}
+    else{
+      ob.innerHTML=open.map(function(p){
+        var d1=p.dir===-1?'short':'long';
+        var tp=p.tp3!=null?'<div class="cell"><div class="k">TP3</div><div class="v">'+Number(p.tp3).toFixed(4)+'</div></div>':'';
+        var tp2=p.tp2!=null?'<div class="cell"><div class="k">TP2</div><div class="v">'+Number(p.tp2).toFixed(4)+'</div></div>':'';
+        return '<div class="pos"><div class="pos-head"><div class="pos-sym">'+p.symbol+'</div><div class="pos-dir '+d1+'">'+(p.dir===-1?'SHORT':'LONG')+'</div></div>'+
+          '<div class="pos-grid">'+
+          '<div class="cell"><div class="k">Entry</div><div class="v">'+Number(p.entry).toFixed(4)+'</div></div>'+
+          '<div class="cell"><div class="k">Stop</div><div class="v">'+Number(p.sl).toFixed(4)+'</div></div>'+
+          '<div class="cell"><div class="k">TP1</div><div class="v">'+(p.tp1!=null?Number(p.tp1).toFixed(4):'—')+'</div></div>'+tp2+tp+
+          '</div></div>';
+      }).join('');
+    }
+    var tb=document.getElementById('histBody');
+    if(!hist.length){tb.innerHTML='<tr><td colspan="7" class="empty">No closed trades yet.</td></tr>';}
+    else{
+      tb.innerHTML=hist.slice().reverse().map(function(h){
+        var dd=h.dir===-1?'s':'l';
+        var rp=Number(h.ret_pct)>=0?'p':'n';
+        return '<tr><td>'+fmtT(h.ts)+'</td><td class="sym">'+h.symbol+'</td><td class="dir '+dd+'">'+(h.dir===-1?'S':'L')+'</td>'+
+          '<td>'+Number(h.entry).toFixed(4)+'</td><td>'+Number(h.exit).toFixed(4)+'</td>'+
+          '<td class="ret '+rp+'">'+fmtPct(h.ret_pct)+'</td><td>'+fmtMoney(h.equity)+'</td></tr>';
+      }).join('');
+    }
+    document.getElementById('meta').textContent=d.updated?'Last updated '+new Date(d.updated*1000).toUTCString().slice(5,25)+' UTC · refreshes every 30s':'Refreshing automatically…';
+  }).catch(function(e){document.getElementById('meta').textContent='Failed to load demo data — retrying…';});
+}
+load();setInterval(load,30000);
+</script>
+</body>
+</html>

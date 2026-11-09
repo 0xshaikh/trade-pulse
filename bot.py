@@ -19,6 +19,10 @@ import requests
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE, 'site', 'data', 'trades.json')
 
+# --- demo-trader publisher (reads the separate multi-asset demo bot's state) ---
+DEMO_STATE = '/home/ubuntu/demo-trader/state'
+DEMO_JSON = os.path.join(BASE, 'site', 'data', 'demo-trader.json')
+
 FEE = 0.0005
 SLIP = 0.0002
 ROUND_TRIP = (FEE + SLIP) * 2
@@ -161,8 +165,8 @@ def save_state(state):
 
 def push():
     try:
-        subprocess.run(['git', 'add', 'site/data/trades.json'], cwd=BASE,
-                       check=True, timeout=30)
+        subprocess.run(['git', 'add', 'site/data/trades.json', 'site/data/demo-trader.json'],
+                       cwd=BASE, check=True, timeout=30)
         subprocess.run(['git', 'commit', '-q', '-m',
                         'bot: update paper trades %d' % int(time.time())],
                        cwd=BASE, check=True, timeout=30)
@@ -172,6 +176,75 @@ def push():
     except Exception as e:
         print('  push failed: %s' % e)
         return False
+
+
+def build_demo_json():
+    """Read the demo-trader bot's state files into a compact JSON for the site."""
+    try:
+        with open(os.path.join(DEMO_STATE, 'status.json')) as f:
+            status = json.load(f)
+    except Exception:
+        return None
+    positions = {}
+    try:
+        with open(os.path.join(DEMO_STATE, 'positions.json')) as f:
+            positions = json.load(f).get('positions', {})
+    except Exception:
+        pass
+    hist = []
+    try:
+        with open(os.path.join(DEMO_STATE, 'trades.csv')) as f:
+            rows = f.read().strip().splitlines()
+        for r in rows[1:][-60:]:
+            p = r.split(',')
+            if len(p) >= 7:
+                hist.append({'ts': p[0], 'symbol': p[1], 'dir': int(p[2]),
+                             'entry': float(p[3]), 'exit': float(p[4]),
+                             'ret_pct': float(p[5]), 'equity': float(p[6])})
+    except Exception:
+        pass
+    open_list = []
+    for sym, p in positions.items():
+        if p:
+            open_list.append({'symbol': sym, 'dir': p.get('dir'), 'entry': p.get('entry'),
+                             'sl': p.get('sl_price'), 'tp1': p.get('tp1'), 'tp2': p.get('tp2'),
+                             'tp3': p.get('tp3'), 'qty': p.get('qty'),
+                             'realized': p.get('realized'), 'opened': p.get('opened')})
+    return {'equity': status.get('equity'), 'cash': status.get('cash'),
+            'day_realized_pct': status.get('day_realized_pct'),
+            'open': open_list, 'history': hist,
+            'updated': int(time.time())}
+
+
+_last_demo_mtime = None
+
+
+def publish_demo():
+    """Write demo-trader.json when the demo bot's state changes. Returns True if written."""
+    global _last_demo_mtime
+    try:
+        mtimes = []
+        for fn in ('status.json', 'positions.json', 'trades.csv'):
+            mp = os.path.join(DEMO_STATE, fn)
+            if os.path.exists(mp):
+                mtimes.append(os.path.getmtime(mp))
+        sig = max(mtimes) if mtimes else 0
+    except Exception:
+        return False
+    if _last_demo_mtime is not None and sig <= _last_demo_mtime:
+        return False
+    data = build_demo_json()
+    if data is None:
+        return False
+    os.makedirs(os.path.dirname(DEMO_JSON), exist_ok=True)
+    tmp = DEMO_JSON + '.tmp'
+    with open(tmp, 'w') as f:
+        json.dump(data, f, indent=1)
+    os.replace(tmp, DEMO_JSON)
+    _last_demo_mtime = sig
+    print('  demo-trader published: equity=%s open=%d hist=%d' %
+          (data.get('equity'), len(data['open']), len(data['history'])))
+    return True
 
 
 def current_equity(state):
@@ -269,6 +342,12 @@ def main():
         if changed:
             state['updated'] = int(time.time())
             save_state(state)
+        demo_changed = False
+        try:
+            demo_changed = publish_demo()
+        except Exception as e:
+            print('  demo publish error: %s' % e)
+        if changed or demo_changed:
             if push():
                 print('  pushed')
         time.sleep(POLL)

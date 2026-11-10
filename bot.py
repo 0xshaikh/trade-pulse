@@ -22,6 +22,7 @@ DATA_FILE = os.path.join(BASE, 'site', 'data', 'trades.json')
 # --- demo-trader publisher (reads the separate multi-asset demo bot's state) ---
 DEMO_STATE = '/home/ubuntu/demo-trader/state'
 DEMO_JSON = os.path.join(BASE, 'site', 'data', 'demo-trader.json')
+REVIEW_JSON = os.path.join(BASE, 'site', 'data', 'review.json')
 
 FEE = 0.0005
 SLIP = 0.0002
@@ -165,7 +166,7 @@ def save_state(state):
 
 def push():
     try:
-        subprocess.run(['git', 'add', 'site/data/trades.json', 'site/data/demo-trader.json'],
+        subprocess.run(['git', 'add', 'site/data/trades.json', 'site/data/demo-trader.json', 'site/data/review.json'],
                        cwd=BASE, check=True, timeout=30)
         subprocess.run(['git', 'commit', '-q', '-m',
                         'bot: update paper trades %d' % int(time.time())],
@@ -219,6 +220,120 @@ def build_demo_json():
 _last_demo_mtime = None
 
 
+def _lesson(row):
+    """One-line lesson for a single journaled trade (evidence-backed, from the row)."""
+    out = str(row.get('outcome', ''))
+    r = str(row.get('exit_reason', ''))
+    lvl = int(row.get('tp_level', 0) or 0)
+    h = float(row.get('hold_hours', 0) or 0)
+    if out == 'win':
+        if lvl >= 3:
+            return 'Full 3R run — let winners run, do not cut early.'
+        if lvl >= 2:
+            return 'Banked 2R — scaling out at TP2 works.'
+        if lvl >= 1:
+            return 'Banked 1R at TP1 — partial TP paid.'
+        return 'Closed in profit — clean trend exit.'
+    # loss attribution (mirrors demo-trader learning_summary)
+    if r == 'SL hit' and lvl == 0 and h <= 4.5:
+        return 'Chop — breakout had no follow-through, hit SL fast. Avoid flat-MA100 chop.'
+    if r == 'SL hit' and lvl == 0:
+        return 'Trend reversal after hold — regime filter too slow for this one.'
+    if r == 'SL hit' and lvl >= 1:
+        return 'Gave back profit — was in TP then reversed to SL. Tighten TP or trail.'
+    if r == 'signal':
+        return 'Signal exit at a loss — trend flipped, cut per rule.'
+    return 'Exited at a loss — review setup validity.'
+
+
+def build_review_json():
+    """Aggregate the demo-trader journal into an actionable review (loss causes, lessons, avoid list)."""
+    import csv as _csv
+    jpath = os.path.join(DEMO_STATE, 'journal.csv')
+    tpath = os.path.join(DEMO_STATE, 'trades.csv')
+    try:
+        with open(jpath) as f:
+            j = list(_csv.DictReader(f))
+    except Exception:
+        j = []
+    total_closed = 0
+    try:
+        with open(tpath) as f:
+            total_closed = max(0, sum(1 for _ in f) - 1)
+    except Exception:
+        pass
+    if not j:
+        return {'n': 0, 'total_closed': total_closed}
+    wins = [x for x in j if x.get('outcome') == 'win']
+    losses = [x for x in j if x.get('outcome') == 'loss']
+    n = len(j)
+    gross_win = sum(float(x['r_total']) for x in wins)
+    gross_loss = abs(sum(float(x['r_total']) for x in losses))
+    pf = round(gross_win / gross_loss, 2) if gross_loss > 0 else 99.0
+    causes = {}
+    for x in losses:
+        c = _lesson(x)
+        key = c.split('—')[0].strip()
+        causes[key] = causes.get(key, 0) + 1
+    causes = dict(sorted(causes.items(), key=lambda kv: -kv[1]))
+    win_exits = {}
+    for x in wins:
+        r = str(x.get('exit_reason', '')); lvl = int(x.get('tp_level', 0) or 0)
+        k = {'TP3 hit': 'TP3 full (3R)', 'TP2 hit': 'TP2 (2R)', 'TP1 hit': 'TP1 (1R)'}.get(r, '%s (lvl%d)' % (r, lvl))
+        win_exits[k] = win_exits.get(k, 0) + 1
+    win_exits = dict(sorted(win_exits.items(), key=lambda kv: -kv[1]))
+    by_exit = {}
+    for x in j:
+        k = str(x.get('exit_reason', '?'))
+        by_exit.setdefault(k, [0, 0.0])
+        by_exit[k][0] += 1
+        by_exit[k][1] += float(x['r_total'])
+    by_asset = {}
+    for x in j:
+        k = str(x.get('symbol', '?'))
+        by_asset.setdefault(k, [0, 0, 0.0])
+        by_asset[k][0] += 1
+        by_asset[k][1] += 1 if x.get('outcome') == 'win' else 0
+        by_asset[k][2] += float(x['r_total'])
+    by_dir = {}
+    for x in j:
+        k = 'SHORT' if str(x.get('dir')) == '-1' else 'LONG'
+        by_dir.setdefault(k, [0, 0, 0.0])
+        by_dir[k][0] += 1
+        by_dir[k][1] += 1 if x.get('outcome') == 'win' else 0
+        by_dir[k][2] += float(x['r_total'])
+    avoid = []
+    for k, (cnt, w, s) in sorted(by_asset.items(), key=lambda kv: kv[1][2]):
+        if cnt >= 2 and s < -0.5:
+            avoid.append('%s: %d/%d wins, %.2fR' % (k, w, cnt, s))
+    for k, (cnt, w, s) in sorted(by_dir.items(), key=lambda kv: kv[1][2]):
+        if cnt >= 3 and w / cnt < 0.34 and s < -0.3:
+            avoid.append('%s side: %d/%d wins, %.2fR' % (k, w, cnt, s))
+    recent = []
+    for x in j[-12:]:
+        recent.append({'ts': x.get('ts_close', ''), 'symbol': x.get('symbol'),
+                       'dir': int(x.get('dir', 0) or 0), 'entry': float(x.get('entry', 0)),
+                       'exit': float(x.get('exit', 0)), 'r': round(float(x.get('r_total', 0)), 2),
+                       'outcome': x.get('outcome'), 'exit_reason': x.get('exit_reason'),
+                       'tp_level': int(x.get('tp_level', 0) or 0), 'lesson': _lesson(x)})
+    status = {}
+    try:
+        with open(os.path.join(DEMO_STATE, 'status.json')) as f:
+            status = json.load(f)
+    except Exception:
+        pass
+    return {'n': n, 'total_closed': total_closed, 'wins': len(wins), 'losses': len(losses),
+            'winrate': round(len(wins) / n * 100, 1) if n else 0,
+            'avg_r': round(sum(float(x['r_total']) for x in j) / n, 2),
+            'pf': pf, 'equity': status.get('equity'),
+            'causes': causes, 'win_exits': win_exits,
+            'by_exit': {k: [v[0], round(v[1], 2)] for k, v in by_exit.items()},
+            'by_asset': {k: [v[0], v[1], round(v[2], 2)] for k, v in by_asset.items()},
+            'by_dir': {k: [v[0], v[1], round(v[2], 2)] for k, v in by_dir.items()},
+            'avoid': avoid, 'recent': recent,
+            'generated': int(time.time())}
+
+
 def publish_demo():
     """Write demo-trader.json when the demo bot's state changes. Returns True if written."""
     global _last_demo_mtime
@@ -241,9 +356,14 @@ def publish_demo():
     with open(tmp, 'w') as f:
         json.dump(data, f, indent=1)
     os.replace(tmp, DEMO_JSON)
+    review = build_review_json()
+    rtmp = REVIEW_JSON + '.tmp'
+    with open(rtmp, 'w') as f:
+        json.dump(review, f, indent=1)
+    os.replace(rtmp, REVIEW_JSON)
     _last_demo_mtime = sig
-    print('  demo-trader published: equity=%s open=%d hist=%d' %
-          (data.get('equity'), len(data['open']), len(data['history'])))
+    print('  demo-trader published: equity=%s open=%d hist=%d review=%d' %
+          (data.get('equity'), len(data['open']), len(data['history']), review.get('n', 0)))
     return True
 
 

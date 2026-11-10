@@ -1,0 +1,238 @@
+{
+ "n": 17,
+ "total_closed": 57,
+ "wins": 6,
+ "losses": 11,
+ "winrate": 35.3,
+ "avg_r": -0.11,
+ "pf": 0.74,
+ "equity": 9746.94,
+ "causes": {
+  "Signal exit at a loss": 8,
+  "Chop": 3
+ },
+ "win_exits": {
+  "signal (lvl0)": 3,
+  "signal (lvl2)": 2,
+  "TP3 full (3R)": 1
+ },
+ "by_exit": {
+  "signal": [
+   13,
+   0.49
+  ],
+  "TP3 hit": [
+   1,
+   1.89
+  ],
+  "SL hit": [
+   3,
+   -4.28
+  ]
+ },
+ "by_asset": {
+  "SOL/USDT": [
+   3,
+   1,
+   -0.45
+  ],
+  "EUR/USD": [
+   3,
+   1,
+   -0.42
+  ],
+  "OIL (WTI)": [
+   1,
+   1,
+   0.11
+  ],
+  "OIL (Brent)": [
+   2,
+   1,
+   -0.22
+  ],
+  "GBP/USD": [
+   3,
+   0,
+   -1.03
+  ],
+  "GOLD": [
+   1,
+   0,
+   -0.32
+  ],
+  "BTC/USDT": [
+   2,
+   1,
+   0.47
+  ],
+  "ETH/USDT": [
+   2,
+   1,
+   -0.03
+  ]
+ },
+ "by_dir": {
+  "SHORT": [
+   12,
+   5,
+   -0.43
+  ],
+  "LONG": [
+   5,
+   1,
+   -1.46
+  ]
+ },
+ "avoid": [
+  "GBP/USD: 0/3 wins, -1.03R",
+  "LONG side: 1/5 wins, -1.46R"
+ ],
+ "recent": [
+  {
+   "ts": "2026-11-05T08:00:16.906315+00:00",
+   "symbol": "GOLD",
+   "dir": 1,
+   "entry": 4144.7,
+   "exit": 4130.2,
+   "r": -0.32,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-05T12:00:11.108816+00:00",
+   "symbol": "EUR/USD",
+   "dir": 1,
+   "entry": 1.1245,
+   "exit": 1.1226,
+   "r": -0.58,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-05T12:00:12.317216+00:00",
+   "symbol": "GBP/USD",
+   "dir": 1,
+   "entry": 1.3471,
+   "exit": 1.3455,
+   "r": -0.54,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-07T00:00:10.443482+00:00",
+   "symbol": "EUR/USD",
+   "dir": -1,
+   "entry": 1.1142,
+   "exit": 1.1143,
+   "r": -0.1,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-07T00:00:11.798717+00:00",
+   "symbol": "GBP/USD",
+   "dir": -1,
+   "entry": 1.3351,
+   "exit": 1.3356,
+   "r": -0.2,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-09T07:58:33.842559+00:00",
+   "symbol": "BTC/USDT",
+   "dir": -1,
+   "entry": 74857.72,
+   "exit": 73805.2,
+   "r": 1.89,
+   "outcome": "win",
+   "exit_reason": "TP3 hit",
+   "tp_level": 2,
+   "lesson": "Banked 2R \u2014 scaling out at TP2 works."
+  },
+  {
+   "ts": "2026-11-09T08:00:36.506340+00:00",
+   "symbol": "ETH/USDT",
+   "dir": -1,
+   "entry": 2142.05,
+   "exit": 2094.08,
+   "r": 1.43,
+   "outcome": "win",
+   "exit_reason": "signal",
+   "tp_level": 2,
+   "lesson": "Banked 2R \u2014 scaling out at TP2 works."
+  },
+  {
+   "ts": "2026-11-09T08:00:37.817850+00:00",
+   "symbol": "SOL/USDT",
+   "dir": -1,
+   "entry": 87.57,
+   "exit": 85.66,
+   "r": 1.45,
+   "outcome": "win",
+   "exit_reason": "signal",
+   "tp_level": 2,
+   "lesson": "Banked 2R \u2014 scaling out at TP2 works."
+  },
+  {
+   "ts": "2026-11-09T12:50:13.033467+00:00",
+   "symbol": "BTC/USDT",
+   "dir": -1,
+   "entry": 74378.18,
+   "exit": 74980.32,
+   "r": -1.43,
+   "outcome": "loss",
+   "exit_reason": "SL hit",
+   "tp_level": 0,
+   "lesson": "Chop \u2014 breakout had no follow-through, hit SL fast. Avoid flat-MA100 chop."
+  },
+  {
+   "ts": "2026-11-09T14:44:49.812324+00:00",
+   "symbol": "SOL/USDT",
+   "dir": -1,
+   "entry": 86.12,
+   "exit": 87.49,
+   "r": -1.4,
+   "outcome": "loss",
+   "exit_reason": "SL hit",
+   "tp_level": 0,
+   "lesson": "Chop \u2014 breakout had no follow-through, hit SL fast. Avoid flat-MA100 chop."
+  },
+  {
+   "ts": "2026-11-09T15:46:59.439853+00:00",
+   "symbol": "ETH/USDT",
+   "dir": -1,
+   "entry": 2113.95,
+   "exit": 2151.03,
+   "r": -1.46,
+   "outcome": "loss",
+   "exit_reason": "SL hit",
+   "tp_level": 0,
+   "lesson": "Chop \u2014 breakout had no follow-through, hit SL fast. Avoid flat-MA100 chop."
+  },
+  {
+   "ts": "2026-11-10T00:00:57.742416+00:00",
+   "symbol": "OIL (Brent)",
+   "dir": -1,
+   "entry": 91.14,
+   "exit": 92.36,
+   "r": -0.46,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  }
+ ],
+ "generated": 1794334048
+}

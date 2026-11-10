@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learnings — Review Every Trade | Trade Pulse</title>
+<meta name="description" content="Post-trade review of the multi-asset demo bot: loss causes, what's working, and a lesson from every trade. Improve daily from real results.">
+<link href="https://db.onlinewebfonts.com/c/13ab13418f633c1b0516fed6e30bedbc?family=Suisse+Int%27l" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Suisse Intl',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased;background:#080A19;color:#fff;min-height:100vh}
+.wrap{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .dot{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#E9E9E9,#b8b8b8);display:grid;place-items:center;color:#080A19;font-weight:700;font-size:15px}
+.brand b{font-size:21px;font-weight:500;letter-spacing:-.02em}
+.brand span{color:rgba(255,255,255,.55);font-size:13px}
+.navlinks{display:flex;gap:8px;flex-wrap:wrap}
+.navlinks a{color:rgba(255,255,255,.75);font-size:13.5px;font-weight:450;text-decoration:none;padding:9px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);transition:.2s}
+.navlinks a:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+.navlinks a.on{background:rgba(255,255,255,.1);color:#fff}
+h1{font-size:30px;font-weight:400;letter-spacing:-.02em;line-height:1.1;margin-bottom:8px}
+.sub{color:rgba(255,255,255,.7);font-size:14.5px;line-height:1.5;max-width:680px;margin-bottom:26px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.stat{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:18px}
+.stat .lbl{color:rgba(255,255,255,.6);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.stat .val{font-size:24px;font-weight:450;letter-spacing:-.01em}
+.stat .val.up{color:#4ade80}.stat .val.down{color:#f87171}.stat .val.flat{color:#fff}
+.stat .sub{color:rgba(255,255,255,.5);font-size:12px;margin-top:6px;margin-bottom:0}
+.card{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:22px;margin-bottom:20px}
+.card h2{font-size:15px;font-weight:500;letter-spacing:-.01em;margin-bottom:16px;display:flex;align-items:center;gap:9px}
+.card h2 .badge{font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
+.cause{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.cause:last-child{border-bottom:none}
+.cause .cbar{flex:none;width:8px;height:38px;border-radius:4px;background:rgba(248,113,113,.6)}
+.cause .cbar.g{background:rgba(74,222,128,.6)}
+.cause .ct{font-size:14px;font-weight:500}
+.cause .cs{font-size:12.5px;color:rgba(255,255,255,.55);margin-top:2px}
+.cause .cn{flex:none;margin-left:auto;font-size:13px;font-weight:500;color:rgba(255,255,255,.7);white-space:nowrap}
+.trade{border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:13px 15px;margin-bottom:10px;background:rgba(255,255,255,.02)}
+.trade:last-child{margin-bottom:0}
+.trade-head{display:flex;align-items:center;gap:10px;margin-bottom:7px;flex-wrap:wrap}
+.trade-sym{font-weight:500;font-size:14px}
+.trade-dir{font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:6px}
+.trade-dir.s{background:rgba(248,113,113,.14);color:#f87171}
+.trade-dir.l{background:rgba(74,222,128,.14);color:#4ade80}
+.trade-r{font-size:13px;font-weight:600}
+.trade-r.p{color:#4ade80}.trade-r.n{color:#f87171}
+.trade-ts{font-size:11px;color:rgba(255,255,255,.45);margin-left:auto}
+.trade-lesson{font-size:13px;color:rgba(255,255,255,.78);line-height:1.5}
+.warn{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:13px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#fecaca}
+.meta{color:rgba(255,255,255,.4);font-size:12px;margin-top:14px;line-height:1.6}
+@media(max-width:520px){h1{font-size:24px}.stat .val{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="dot">T</div><div><b>Trade Pulse</b><br><span>Learnings · Review</span></div></div>
+    <div class="navlinks">
+      <a href="index.html">Trade Pulse Bot</a>
+      <a href="demo.html">Demo Bot</a>
+      <a class="on" href="learnings.html">Learnings</a>
+    </div>
+  </div>
+
+  <h1>Learn from Every Trade</h1>
+  <p class="sub">The demo bot's own journal, reviewed after every close. This shows <b>where the loss comes from</b>, <b>what's working</b>, and a one-line <b>lesson from each trade</b> — so the next trade is better than the last.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">Closed Trades</div><div class="val flat" id="sTotal">—</div><div class="sub">journaled / all-time</div></div>
+    <div class="stat"><div class="lbl">Win Rate</div><div class="val flat" id="sWr">—</div><div class="sub">journaled</div></div>
+    <div class="stat"><div class="lbl">Avg R</div><div class="val flat" id="sR">—</div><div class="sub">per trade</div></div>
+    <div class="stat"><div class="lbl">Profit Factor</div><div class="val flat" id="sPf">—</div><div class="sub">gross win / gross loss</div></div>
+    <div class="stat"><div class="lbl">Equity</div><div class="val flat" id="sEq">—</div><div class="sub">demo bot</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Where the Loss Comes From <span class="badge" id="cBadge">0</span></h2>
+    <div id="causesBox"><div class="meta">Loading…</div></div>
+    <div class="warn" id="avoidBox" style="margin-top:14px;display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2>What's Working <span class="badge" id="wBadge">0</span></h2>
+    <div id="winBox"><div class="meta">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Every Trade &amp; Its Lesson <span class="badge" id="tBadge">0</span></h2>
+    <div id="tradesBox"><div class="meta">Loading…</div></div>
+  </div>
+
+  <p class="meta" id="meta">Refreshing automatically…</p>
+</div>
+
+<script>
+function fmtMoney(x){return '$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtT(ts){try{var d=new Date(ts);return d.toUTCString().slice(5,17)+' UTC';}catch(e){return ts;}}
+function load(){
+  return fetch('data/review.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.n){document.getElementById('meta').textContent='No journaled trades yet — review appears after the first closed trade.';return;}
+    document.getElementById('sTotal').textContent=d.n+' / '+(d.total_closed||d.n);
+    var wr=d.winrate||0; document.getElementById('sWr').textContent=wr.toFixed(0)+'%'; document.getElementById('sWr').className='val '+(wr>=50?'up':'down');
+    var ar=d.avg_r||0; document.getElementById('sR').textContent=(ar>=0?'+':'')+ar.toFixed(2)+'R'; document.getElementById('sR').className='val '+(ar>=0?'up':'down');
+    var pf=d.pf||0; document.getElementById('sPf').textContent=pf===99?'∞':pf.toFixed(2); document.getElementById('sPf').className='val '+(pf>=1?'up':'down');
+    if(d.equity!=null){document.getElementById('sEq').textContent=fmtMoney(d.equity);}
+    var causes=d.causes||{}; var ck=Object.keys(causes);
+    document.getElementById('cBadge').textContent=ck.length;
+    document.getElementById('causesBox').innerHTML=ck.length?ck.map(function(k){
+      return '<div class="cause"><div class="cbar"></div><div><div class="ct">'+k+'</div><div class="cs">loss exit — review this setup</div></div><div class="cn">'+causes[k]+'×</div></div>';
+    }).join(''):'<div class="meta">No losses journaled yet.</div>';
+    var av=d.avoid||[];
+    if(av.length){document.getElementById('avoidBox').style.display='block';
+      document.getElementById('avoidBox').innerHTML='<b>⚠ Avoid right now:</b> '+av.join(' &nbsp;·&nbsp; ')+' <span style="opacity:.75">(small sample — watch, don't over-trade these)</span>';}
+    var we=d.win_exits||{}; var wk=Object.keys(we);
+    document.getElementById('wBadge').textContent=wk.length;
+    document.getElementById('winBox').innerHTML=wk.length?wk.map(function(k){
+      return '<div class="cause"><div class="cbar g"></div><div><div class="ct">'+k+'</div><div class="cs">winning exit</div></div><div class="cn">'+we[k]+'×</div></div>';
+    }).join(''):'<div class="meta">No wins journaled yet.</div>';
+    var rec=d.recent||[]; document.getElementById('tBadge').textContent=rec.length;
+    document.getElementById('tradesBox').innerHTML=rec.length?rec.slice().reverse().map(function(t){
+      var dd=t.dir===-1?'s':'l'; var rc=t.r>=0?'p':'n';
+      return '<div class="trade"><div class="trade-head"><span class="trade-sym">'+t.symbol+'</span><span class="trade-dir '+dd+'">'+(t.dir===-1?'SHORT':'LONG')+'</span><span class="trade-r '+rc+'">'+(t.r>=0?'+':'')+t.r.toFixed(2)+'R</span><span class="trade-ts">'+fmtT(t.ts)+'</span></div><div class="trade-lesson">'+t.lesson+'</div></div>';
+    }).join(''):'<div class="meta">No trades journaled yet.</div>';
+    document.getElementById('meta').textContent=d.generated?'Review generated '+new Date(d.generated*1000).toUTCString().slice(5,25)+' UTC · refreshes every 30s':'Refreshing automatically…';
+  }).catch(function(){document.getElementById('meta').textContent='Failed to load review — retrying…';});
+}
+load();setInterval(load,30000);
+</script>
+</body>
+</html>

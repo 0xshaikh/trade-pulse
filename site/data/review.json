@@ -6,7 +6,7 @@
  "winrate": 35.3,
  "avg_r": -0.11,
  "pf": 0.74,
- "equity": 9738.08,
+ "equity": 9734.21,
  "causes": {
   "Signal exit at a loss": 8,
   "Chop": 3
@@ -234,5 +234,5 @@
    "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
   }
  ],
- "generated": 1794341585
+ "generated": 1794341648
 }

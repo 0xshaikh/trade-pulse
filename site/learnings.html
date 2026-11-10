@@ -112,7 +112,7 @@ function load(){
     }).join(''):'<div class="meta">No losses journaled yet.</div>';
     var av=d.avoid||[];
     if(av.length){document.getElementById('avoidBox').style.display='block';
-      document.getElementById('avoidBox').innerHTML='<b>⚠ Avoid right now:</b> '+av.join(' &nbsp;·&nbsp; ')+' <span style="opacity:.75">(small sample — watch, don't over-trade these)</span>';}
+      document.getElementById('avoidBox').innerHTML='<b>⚠ Avoid right now:</b> '+av.join(' &nbsp;·&nbsp; ')+' <span style="opacity:.75">(small sample — watch, do not over-trade these)</span>';}
     var we=d.win_exits||{}; var wk=Object.keys(we);
     document.getElementById('wBadge').textContent=wk.length;
     document.getElementById('winBox').innerHTML=wk.length?wk.map(function(k){

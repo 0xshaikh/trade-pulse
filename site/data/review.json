@@ -1,25 +1,25 @@
 {
- "n": 21,
- "total_closed": 61,
- "wins": 6,
- "losses": 15,
- "winrate": 28.6,
- "avg_r": -0.19,
- "pf": 0.58,
- "equity": 9638.63,
+ "n": 24,
+ "total_closed": 64,
+ "wins": 7,
+ "losses": 17,
+ "winrate": 29.2,
+ "avg_r": -0.18,
+ "pf": 0.55,
+ "equity": 9633.53,
  "causes": {
-  "Signal exit at a loss": 12,
+  "Signal exit at a loss": 14,
   "Chop": 3
  },
  "win_exits": {
-  "signal (lvl0)": 3,
+  "signal (lvl0)": 4,
   "signal (lvl2)": 2,
   "TP3 full (3R)": 1
  },
  "by_exit": {
   "signal": [
-   17,
-   -1.5
+   20,
+   -1.94
   ],
   "TP3 hit": [
    1,
@@ -37,9 +37,9 @@
    -1.15
   ],
   "EUR/USD": [
-   3,
+   4,
    1,
-   -0.42
+   -0.52
   ],
   "OIL (WTI)": [
    1,
@@ -52,9 +52,9 @@
    -0.22
   ],
   "GBP/USD": [
-   3,
-   0,
-   -1.03
+   4,
+   1,
+   -1.02
   ],
   "GOLD": [
    1,
@@ -72,66 +72,31 @@
    -0.49
   ],
   "USD/JPY": [
-   1,
+   2,
    0,
-   -0.25
+   -0.6
   ]
  },
  "by_dir": {
   "SHORT": [
-   15,
-   5,
-   -2.18
+   17,
+   6,
+   -2.27
   ],
   "LONG": [
-   6,
+   7,
    1,
-   -1.72
+   -2.06
   ]
  },
  "avoid": [
   "SOL/USDT: 1/4 wins, -1.15R",
-  "GBP/USD: 0/3 wins, -1.03R",
-  "SHORT side: 5/15 wins, -2.18R",
-  "LONG side: 1/6 wins, -1.72R"
+  "GBP/USD: 1/4 wins, -1.02R",
+  "USD/JPY: 0/2 wins, -0.60R",
+  "EUR/USD: 1/4 wins, -0.52R",
+  "LONG side: 1/7 wins, -2.06R"
  ],
  "recent": [
-  {
-   "ts": "2026-11-07T00:00:11.798717+00:00",
-   "symbol": "GBP/USD",
-   "dir": -1,
-   "entry": 1.3351,
-   "exit": 1.3356,
-   "r": -0.2,
-   "outcome": "loss",
-   "exit_reason": "signal",
-   "tp_level": 0,
-   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
-  },
-  {
-   "ts": "2026-11-09T07:58:33.842559+00:00",
-   "symbol": "BTC/USDT",
-   "dir": -1,
-   "entry": 74857.72,
-   "exit": 73805.2,
-   "r": 1.89,
-   "outcome": "win",
-   "exit_reason": "TP3 hit",
-   "tp_level": 2,
-   "lesson": "Banked 2R \u2014 scaling out at TP2 works."
-  },
-  {
-   "ts": "2026-11-09T08:00:36.506340+00:00",
-   "symbol": "ETH/USDT",
-   "dir": -1,
-   "entry": 2142.05,
-   "exit": 2094.08,
-   "r": 1.43,
-   "outcome": "win",
-   "exit_reason": "signal",
-   "tp_level": 2,
-   "lesson": "Banked 2R \u2014 scaling out at TP2 works."
-  },
   {
    "ts": "2026-11-09T08:00:37.817850+00:00",
    "symbol": "SOL/USDT",
@@ -239,7 +204,43 @@
    "exit_reason": "signal",
    "tp_level": 0,
    "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-12T00:00:52.757386+00:00",
+   "symbol": "EUR/USD",
+   "dir": -1,
+   "entry": 1.1095,
+   "exit": 1.1095,
+   "r": -0.1,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-12T00:00:53.975281+00:00",
+   "symbol": "GBP/USD",
+   "dir": -1,
+   "entry": 1.3279,
+   "exit": 1.3274,
+   "r": 0.01,
+   "outcome": "win",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Closed in profit \u2014 clean trend exit."
+  },
+  {
+   "ts": "2026-11-12T00:00:55.311135+00:00",
+   "symbol": "USD/JPY",
+   "dir": 1,
+   "entry": 159.848,
+   "exit": 159.749,
+   "r": -0.35,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
   }
  ],
- "generated": 1794441600
+ "generated": 1794441662
 }

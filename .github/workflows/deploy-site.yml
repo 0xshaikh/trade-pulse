@@ -12,7 +12,7 @@ permissions:
   id-token: write
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -25,5 +25,63 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: 'site/'
-      - uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages (retry transient errors)
         id: deployment
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          SHA="${{ github.sha }}"
+          echo "Creating Pages deployment for SHA $SHA"
+          DEPLOY_ID=""
+          # Find the github-pages artifact for THIS commit (retry until it appears)
+          for attempt in 1 2 3 4 5 6; do
+            ARTIFACT_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts" \
+              --jq ".artifacts[] | select(.name==\"github-pages\" and .workflow_run.head_sha==\"$SHA\") | .id" 2>/dev/null | head -1)
+            if [ -n "$ARTIFACT_ID" ]; then
+              echo "Found artifact id=$ARTIFACT_ID (attempt $attempt)"
+              break
+            fi
+            echo "Artifact not ready (attempt $attempt), waiting..."
+            sleep $((attempt * 10))
+          done
+          if [ -z "${ARTIFACT_ID:-}" ]; then
+            echo "::error::No github-pages artifact found for $SHA"
+            exit 1
+          fi
+          # Create the Pages deployment (retry on transient 5xx / server errors)
+          for attempt in 1 2 3 4 5; do
+            RESP=$(gh api --method POST "repos/$GITHUB_REPOSITORY/pages/deployments" \
+              -f "build_type=legacy" -f "artifact_id=$ARTIFACT_ID" 2>&1) && {
+              DEPLOY_ID=$(echo "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null)
+              if [ -n "$DEPLOY_ID" ]; then
+                echo "Deployment created id=$DEPLOY_ID (attempt $attempt)"
+                break
+              fi
+            }
+            echo "Deployment create failed (attempt $attempt): $(echo "$RESP" | head -2)"
+            sleep $((attempt * 15))
+          done
+          if [ -z "${DEPLOY_ID:-}" ]; then
+            echo "::error::Failed to create Pages deployment after retries"
+            exit 1
+          fi
+          # Poll until the deployment is built (or errored)
+          for poll in $(seq 1 40); do
+            STATUS=$(gh api "repos/$GITHUB_REPOSITORY/pages/deployments/$DEPLOY_ID" \
+              --jq '.status' 2>/dev/null)
+            echo "Deployment status: ${STATUS:-unknown} (poll $poll)"
+            if [ "$STATUS" = "built" ]; then
+              echo "Deployment built successfully"
+              echo "page_url=https://${{ github.event.repository.name }}.github.io" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$STATUS" = "errored" ] || [ "$STATUS" = "failed" ]; then
+              echo "::error::Deployment errored: $STATUS"
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "::error::Deployment timed out waiting for build"
+          exit 1

@@ -6,7 +6,7 @@
  "winrate": 21.2,
  "avg_r": -0.2,
  "pf": 0.45,
- "equity": 9470.69,
+ "equity": 9469.13,
  "causes": {
   "Signal exit at a loss": 22,
   "Chop": 3,
@@ -251,5 +251,5 @@
    "lesson": "Gave back profit \u2014 was in TP then reversed to SL. Tighten TP or trail."
   }
  ],
- "generated": 1794567431
+ "generated": 1794567493
 }

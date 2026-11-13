@@ -1,15 +1,16 @@
 {
- "n": 32,
- "total_closed": 72,
+ "n": 33,
+ "total_closed": 73,
  "wins": 7,
- "losses": 25,
- "winrate": 21.9,
- "avg_r": -0.21,
+ "losses": 26,
+ "winrate": 21.2,
+ "avg_r": -0.2,
  "pf": 0.45,
- "equity": 9556.4,
+ "equity": 9542.13,
  "causes": {
   "Signal exit at a loss": 22,
-  "Chop": 3
+  "Chop": 3,
+  "Gave back profit": 1
  },
  "win_exits": {
   "signal (lvl0)": 4,
@@ -26,8 +27,8 @@
    1.89
   ],
   "SL hit": [
-   3,
-   -4.28
+   4,
+   -4.4
   ]
  },
  "by_asset": {
@@ -62,9 +63,9 @@
    -0.69
   ],
   "BTC/USDT": [
-   4,
+   5,
    1,
-   -0.24
+   -0.35
   ],
   "ETH/USDT": [
    4,
@@ -84,9 +85,9 @@
  },
  "by_dir": {
   "SHORT": [
-   25,
+   26,
    6,
-   -4.54
+   -4.65
   ],
   "LONG": [
    7,
@@ -101,22 +102,10 @@
   "EUR/USD: 1/5 wins, -0.83R",
   "GOLD: 0/2 wins, -0.69R",
   "USD/JPY: 0/2 wins, -0.60R",
-  "SHORT side: 6/25 wins, -4.54R",
+  "SHORT side: 6/26 wins, -4.65R",
   "LONG side: 1/7 wins, -2.06R"
  ],
  "recent": [
-  {
-   "ts": "2026-11-11T00:00:30.147191+00:00",
-   "symbol": "USD/JPY",
-   "dir": 1,
-   "entry": 158.777,
-   "exit": 158.716,
-   "r": -0.25,
-   "outcome": "loss",
-   "exit_reason": "signal",
-   "tp_level": 0,
-   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
-  },
   {
    "ts": "2026-11-12T00:00:52.757386+00:00",
    "symbol": "EUR/USD",
@@ -248,7 +237,19 @@
    "exit_reason": "signal",
    "tp_level": 0,
    "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-13T06:31:59.389216+00:00",
+   "symbol": "BTC/USDT",
+   "dir": -1,
+   "entry": 68926.33,
+   "exit": 68959.67,
+   "r": -0.12,
+   "outcome": "loss",
+   "exit_reason": "SL hit",
+   "tp_level": 1,
+   "lesson": "Gave back profit \u2014 was in TP then reversed to SL. Tighten TP or trail."
   }
  ],
- "generated": 1794551508
+ "generated": 1794551571
 }

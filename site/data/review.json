@@ -1,16 +1,17 @@
 {
- "n": 35,
- "total_closed": 75,
+ "n": 36,
+ "total_closed": 76,
  "wins": 7,
- "losses": 28,
- "winrate": 20.0,
- "avg_r": -0.25,
- "pf": 0.38,
- "equity": 9422.94,
+ "losses": 29,
+ "winrate": 19.4,
+ "avg_r": -0.29,
+ "pf": 0.34,
+ "equity": 9401.47,
  "causes": {
   "Signal exit at a loss": 24,
   "Chop": 3,
-  "Gave back profit": 1
+  "Gave back profit": 1,
+  "Trend reversal after hold": 1
  },
  "win_exits": {
   "signal (lvl0)": 4,
@@ -27,8 +28,8 @@
    1.89
   ],
   "SL hit": [
-   4,
-   -4.4
+   5,
+   -5.91
   ]
  },
  "by_asset": {
@@ -63,9 +64,9 @@
    -0.69
   ],
   "BTC/USDT": [
-   5,
+   6,
    1,
-   -0.35
+   -1.86
   ],
   "ETH/USDT": [
    5,
@@ -85,9 +86,9 @@
  },
  "by_dir": {
   "SHORT": [
-   28,
+   29,
    6,
-   -6.85
+   -8.35
   ],
   "LONG": [
    7,
@@ -98,26 +99,15 @@
  "avoid": [
   "SOL/USDT: 1/6 wins, -2.65R",
   "ETH/USDT: 1/5 wins, -2.10R",
+  "BTC/USDT: 1/6 wins, -1.86R",
   "GBP/USD: 1/6 wins, -1.22R",
   "EUR/USD: 1/5 wins, -0.83R",
   "GOLD: 0/2 wins, -0.69R",
   "USD/JPY: 0/2 wins, -0.60R",
-  "SHORT side: 6/28 wins, -6.85R",
+  "SHORT side: 6/29 wins, -8.35R",
   "LONG side: 1/7 wins, -2.06R"
  ],
  "recent": [
-  {
-   "ts": "2026-11-12T00:00:55.311135+00:00",
-   "symbol": "USD/JPY",
-   "dir": 1,
-   "entry": 159.848,
-   "exit": 159.749,
-   "r": -0.35,
-   "outcome": "loss",
-   "exit_reason": "signal",
-   "tp_level": 0,
-   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
-  },
   {
    "ts": "2026-11-12T12:00:19.501621+00:00",
    "symbol": "EUR/USD",
@@ -249,7 +239,19 @@
    "exit_reason": "signal",
    "tp_level": 0,
    "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-13T13:32:30.482663+00:00",
+   "symbol": "BTC/USDT",
+   "dir": -1,
+   "entry": 68594.01,
+   "exit": 69669.71,
+   "r": -1.51,
+   "outcome": "loss",
+   "exit_reason": "SL hit",
+   "tp_level": 0,
+   "lesson": "Trend reversal after hold \u2014 regime filter too slow for this one."
   }
  ],
- "generated": 1794576712
+ "generated": 1794576775
 }

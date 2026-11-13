@@ -1,14 +1,14 @@
 {
- "n": 33,
- "total_closed": 73,
+ "n": 35,
+ "total_closed": 75,
  "wins": 7,
- "losses": 26,
- "winrate": 21.2,
- "avg_r": -0.2,
- "pf": 0.45,
- "equity": 9461.9,
+ "losses": 28,
+ "winrate": 20.0,
+ "avg_r": -0.25,
+ "pf": 0.38,
+ "equity": 9428.35,
  "causes": {
-  "Signal exit at a loss": 22,
+  "Signal exit at a loss": 24,
   "Chop": 3,
   "Gave back profit": 1
  },
@@ -19,8 +19,8 @@
  },
  "by_exit": {
   "signal": [
-   28,
-   -4.21
+   30,
+   -6.41
   ],
   "TP3 hit": [
    1,
@@ -33,9 +33,9 @@
  },
  "by_asset": {
   "SOL/USDT": [
-   5,
+   6,
    1,
-   -1.63
+   -2.65
   ],
   "EUR/USD": [
    5,
@@ -68,9 +68,9 @@
    -0.35
   ],
   "ETH/USDT": [
-   4,
+   5,
    1,
-   -0.93
+   -2.1
   ],
   "USD/JPY": [
    2,
@@ -85,9 +85,9 @@
  },
  "by_dir": {
   "SHORT": [
-   26,
+   28,
    6,
-   -4.65
+   -6.85
   ],
   "LONG": [
    7,
@@ -96,40 +96,16 @@
   ]
  },
  "avoid": [
-  "SOL/USDT: 1/5 wins, -1.63R",
+  "SOL/USDT: 1/6 wins, -2.65R",
+  "ETH/USDT: 1/5 wins, -2.10R",
   "GBP/USD: 1/6 wins, -1.22R",
-  "ETH/USDT: 1/4 wins, -0.93R",
   "EUR/USD: 1/5 wins, -0.83R",
   "GOLD: 0/2 wins, -0.69R",
   "USD/JPY: 0/2 wins, -0.60R",
-  "SHORT side: 6/26 wins, -4.65R",
+  "SHORT side: 6/28 wins, -6.85R",
   "LONG side: 1/7 wins, -2.06R"
  ],
  "recent": [
-  {
-   "ts": "2026-11-12T00:00:52.757386+00:00",
-   "symbol": "EUR/USD",
-   "dir": -1,
-   "entry": 1.1095,
-   "exit": 1.1095,
-   "r": -0.1,
-   "outcome": "loss",
-   "exit_reason": "signal",
-   "tp_level": 0,
-   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
-  },
-  {
-   "ts": "2026-11-12T00:00:53.975281+00:00",
-   "symbol": "GBP/USD",
-   "dir": -1,
-   "entry": 1.3279,
-   "exit": 1.3274,
-   "r": 0.01,
-   "outcome": "win",
-   "exit_reason": "signal",
-   "tp_level": 0,
-   "lesson": "Closed in profit \u2014 clean trend exit."
-  },
   {
    "ts": "2026-11-12T00:00:55.311135+00:00",
    "symbol": "USD/JPY",
@@ -249,7 +225,31 @@
    "exit_reason": "SL hit",
    "tp_level": 1,
    "lesson": "Gave back profit \u2014 was in TP then reversed to SL. Tighten TP or trail."
+  },
+  {
+   "ts": "2026-11-13T12:00:08.389603+00:00",
+   "symbol": "ETH/USDT",
+   "dir": -1,
+   "entry": 1934.99,
+   "exit": 1960.13,
+   "r": -1.18,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
+  },
+  {
+   "ts": "2026-11-13T12:00:09.895853+00:00",
+   "symbol": "SOL/USDT",
+   "dir": -1,
+   "entry": 79.79,
+   "exit": 80.71,
+   "r": -1.02,
+   "outcome": "loss",
+   "exit_reason": "signal",
+   "tp_level": 0,
+   "lesson": "Signal exit at a loss \u2014 trend flipped, cut per rule."
   }
  ],
- "generated": 1794571191
+ "generated": 1794571254
 }

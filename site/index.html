@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trade Pulse — BTC & Gold Futures, 15M Trendline System</title>
-<meta name="description" content="Trendline trading system for BTCUSDT and XAUUSDT futures. 1H/4H trendline signals, 15M execution, 1:2 & 1:15 targets, paper trading from $1,000.">
+<title>Trade Pulse — GOLD / BTC / SOL 4H Trend System (v5)</title>
+<meta name="description" content="Focused portfolio: GOLD, BTC and SOL futures on 4H. Donchian10 breakout + MA100 trend + chop filter + daily MA200 gate, 1R/3R targets, 1% risk, paper trading from $1,000. Every trade and full history shown.">
 <link href="https://db.onlinewebfonts.com/c/13ab13418f633c1b0516fed6e30bedbc?family=Suisse+Int%27l" rel="stylesheet">
 <style>
 /* ============ APOGEE HERO (exact spec values) ============ */
@@ -227,10 +227,10 @@ tr.loss td.r{color:#f87171;font-weight:450}
       <div class="hero-row-inner">
         <div class="hero-copy">
           <div class="animate-fade-up" style="animation-delay:300ms">
-            <h1>Trade smarter with trendline signals</h1>
+            <h1>Trade the trend, not the noise</h1>
           </div>
           <div class="animate-fade-up" style="animation-delay:500ms">
-            <p class="sub">1H &amp; 4H trendline system for BTC and Gold futures. 15M execution, 1:2 and 1:15 targets, built to self-improve from $1,000.</p>
+            <p class="sub">Focused 4H trend system on GOLD, BTC and SOL futures. Breakout + trend + chop filter, 1R/3R targets, 1% risk, paper from $1,000.</p>
           </div>
           <div class="animate-fade-up" style="animation-delay:700ms">
             <div class="cta-row">
@@ -280,39 +280,40 @@ tr.loss td.r{color:#f87171;font-weight:450}
 <div class="dash" id="dash">
   <div class="dash-head">
     <div>
-      <h1 class="dash-title">Trendline System<small>BTCUSDT &amp; XAUUSDT futures · 15M execution · 4H/1H trendline direction · 1:2 &amp; 1:15 R:R</small></h1>
+      <h1 class="dash-title">4H Trend System<small>GOLD · BTC · SOL futures · 4H · Donchian10 breakout + MA100 + chop filter + daily MA200 gate · 1R/3R · 1% risk</small></h1>
     </div>
     <div class="pair-switch">
       <button class="pair-btn active" id="btnXAU" onclick="setPair('XAUUSDT')">Gold (XAUUSDT)</button>
       <button class="pair-btn" id="btnBTC" onclick="setPair('BTCUSDT')">Bitcoin (BTCUSDT)</button>
+      <button class="pair-btn" id="btnSOL" onclick="setPair('SOLUSDT')">Solana (SOLUSDT)</button>
     </div>
   </div>
 
   <div class="stat-strip">
     <div class="stat"><div class="lbl">Paper Equity</div><div class="val" id="sEq">$1,000</div><div class="sub">started $1,000</div></div>
     <div class="stat"><div class="lbl">Total Trades</div><div class="val" id="sTrades">0</div><div class="sub" id="sOpen">0 open</div></div>
-    <div class="stat"><div class="lbl">Win Rate</div><div class="val" id="sWr">—</div><div class="sub">target 70–80%</div><div class="wr-track"><div class="wr-fill" id="sWrFill" style="width:0%"></div></div></div>
+    <div class="stat"><div class="lbl">Win Rate</div><div class="val" id="sWr">—</div><div class="sub">1R/3R trend system</div><div class="wr-track"><div class="wr-fill" id="sWrFill" style="width:0%"></div></div></div>
     <div class="stat"><div class="lbl">Profit Factor</div><div class="val" id="sPf">—</div><div class="sub" id="sPfSub">net R on closed trades</div></div>
-    <div class="stat"><div class="lbl">Trendline Signal</div><div class="val" id="sSig">—</div><div class="sub" id="sSigSub">waiting for data</div></div>
+    <div class="stat"><div class="lbl">Bot Signal</div><div class="val" id="sSig">—</div><div class="sub" id="sSigSub">waiting for data</div></div>
   </div>
 
   <div class="grid">
     <div>
       <div class="panel">
         <div class="chart-head">
-          <h3>Price Chart <span class="tag live" id="pairTag">XAUUSDT · 15M</span></h3>
+          <h3>Price Chart <span class="tag live" id="pairTag">XAUUSDT · 4H</span></h3>
           <div class="tf-switch">
-            <button class="tf-btn active" data-tf="15m" onclick="setTf('15m')">15M</button>
+            <button class="tf-btn" data-tf="15m" onclick="setTf('15m')">15M</button>
             <button class="tf-btn" data-tf="1h" onclick="setTf('1h')">1H</button>
-            <button class="tf-btn" data-tf="4h" onclick="setTf('4h')">4H</button>
+            <button class="tf-btn active" data-tf="4h" onclick="setTf('4h')">4H</button>
             <button class="tf-btn" data-tf="1d" onclick="setTf('1d')">1D</button>
           </div>
         </div>
         <div class="chart-wrap"><div id="chart"></div></div>
         <div class="legend">
-          <span><i style="background:#4ade80"></i>4H support (long)</span>
-          <span><i style="background:#f87171"></i>4H resistance (short)</span>
-          <span><i style="background:#fbbf24"></i>signal zone / entry</span>
+          <span><i style="background:#4ade80"></i>Donchian10 breakout (long)</span>
+          <span><i style="background:#f87171"></i>Donchian10 breakdown (short)</span>
+          <span><i style="background:#fbbf24"></i>MA100 trend filter</span>
         </div>
       </div>
       <div class="panel" style="margin-top:16px">
@@ -329,19 +330,18 @@ tr.loss td.r{color:#f87171;font-weight:450}
 
     <div>
       <div class="panel">
-        <h3>Trade Signal <span class="tag" id="sigTag">IDLE</span></h3>
+        <h3>Bot Signal <span class="tag" id="sigTag">IDLE</span></h3>
         <div class="sig-line"><span class="k">Pair</span><span class="v" id="sigPair">XAUUSDT</span></div>
-        <div class="sig-line"><span class="k">4H trend</span><span class="v" id="sigTrend">—</span></div>
-        <div class="sig-line"><span class="k">Trendline touch</span><span class="v" id="sigTouch">—</span></div>
-        <div class="sig-line"><span class="k">Direction</span><span class="v" id="sigDir">—</span></div>
-        <div class="sig-line"><span class="k">Entry zone</span><span class="v" id="sigEntry">—</span></div>
+        <div class="sig-line"><span class="k">4H direction</span><span class="v" id="sigTrend">—</span></div>
+        <div class="sig-line"><span class="k">Setup</span><span class="v" id="sigTouch">—</span></div>
+        <div class="sig-line"><span class="k">Position</span><span class="v" id="sigDir">—</span></div>
+        <div class="sig-line"><span class="k">Entry</span><span class="v" id="sigEntry">—</span></div>
         <div class="sig-line"><span class="k">Stop</span><span class="v" id="sigStop">—</span></div>
-        <div class="sig-line"><span class="k">Target 1 (2R)</span><span class="v amber" id="sigTp1">—</span></div>
-        <div class="sig-line"><span class="k">Target 2 (15R)</span><span class="v" id="sigTp2">—</span></div>
+        <div class="sig-line"><span class="k">Target (3R)</span><span class="v amber" id="sigTp1">—</span></div>
         <div style="margin-top:16px;display:flex;gap:10px">
-          <button class="btn light" id="takeBtn" onclick="takeTrade()" style="flex:1">Take Trade</button>
+          <button class="btn light" id="takeBtn" onclick="takeTrade()" style="flex:1">Auto-Bot Trading</button>
         </div>
-        <p class="note"><b>Honest note:</b> backtest shows the 15R runner is rarely reached — most winners close at the 2R target. The 70–80% win-rate target is only realistic on Gold (XAUUSDT) 4H trendline bounces; Bitcoin trades are lower probability.</p>
+        <p class="note"><b>Honest note:</b> this is a low-frequency 4H trend system — 1–2 trades per month per pair, only when a clean breakout + trend + regime gate align. Win rate ~35–40% (1R stops happen; the 3R winners fund them). Zero-loss is impossible; this is the positive-expectancy, low-drawdown portfolio.</p>
       </div>
 
       <div class="panel" style="margin-top:16px">
@@ -560,30 +560,30 @@ function updateUI(){
   var netR=closed.reduce(function(s,h){return s+h.rR;},0);
   document.getElementById('sPfSub').textContent='net R '+netR.toFixed(1);
   var sigTag=document.getElementById('sigTag');
-  if(sig){
-    sigTag.textContent=sig.dir==='long'?'LONG':'SHORT';sigTag.className='tag '+(sig.dir==='long'?'live':'');
-    document.getElementById('sigTrend').textContent=sig.dir==='long'?'Bullish (4H higher lows)':'Bearish (4H lower highs)';
-    document.getElementById('sigTrend').className='v '+(sig.dir==='long'?'up':'dn');
-    document.getElementById('sigTouch').textContent='touch @ '+fmt(sig.zone,2);
+  if(openState){
+    var dirL=openState.dir==='long'||openState.dir==='LONG'||openState.dir===1;
+    sigTag.textContent=dirL?'LONG':'SHORT';sigTag.className='tag live';
+    document.getElementById('sigTrend').textContent=dirL?'4H uptrend':'4H downtrend';
+    document.getElementById('sigTrend').className='v '+(dirL?'up':'dn');
+    document.getElementById('sigTouch').textContent='breakout confirmed';
     document.getElementById('sigTouch').className='v amber';
-    document.getElementById('sigDir').textContent=sig.dir==='long'?'Buy (15M reclaim above line)':'Sell (15M break below line)';
-    document.getElementById('sigDir').className='v '+(sig.dir==='long'?'up':'dn');
-    document.getElementById('sigEntry').textContent=fmt(sig.entry,2);
-    document.getElementById('sigStop').textContent=fmt(sig.stop,2);
-    document.getElementById('sigTp1').textContent=fmt(sig.tp1,2);
-    document.getElementById('sigTp2').textContent=fmt(sig.tp2,2);
-    document.getElementById('sSig').textContent=sig.dir==='long'?'LONG':'SHORT';
-    document.getElementById('sSig').className='val '+(sig.dir==='long'?'good':'bad');
-    document.getElementById('sSigSub').textContent='15M signal live';
+    document.getElementById('sigDir').textContent=(dirL?'LONG':'SHORT')+' position';
+    document.getElementById('sigDir').className='v '+(dirL?'up':'dn');
+    document.getElementById('sigEntry').textContent=fmt(openState.entry,2);
+    document.getElementById('sigStop').textContent=fmt(openState.stop,2);
+    document.getElementById('sigTp1').textContent=fmt(openState.tgt,2);
+    document.getElementById('sSig').textContent=dirL?'LONG':'SHORT';
+    document.getElementById('sSig').className='val '+(dirL?'good':'bad');
+    document.getElementById('sSigSub').textContent='open position (bot)';
     document.getElementById('takeBtn').disabled=true;
     document.getElementById('takeBtn').textContent='Auto-Bot Trading';
   }else{
     sigTag.textContent='IDLE';sigTag.className='tag';
     document.getElementById('sigTrend').textContent='—';document.getElementById('sigTrend').className='v';
     document.getElementById('sigTouch').textContent='—';document.getElementById('sigTouch').className='v';
-    document.getElementById('sigDir').textContent='waiting for trendline touch';document.getElementById('sigDir').className='v';
+    document.getElementById('sigDir').textContent='waiting for 4H breakout signal';document.getElementById('sigDir').className='v';
     document.getElementById('sigEntry').textContent='—';document.getElementById('sigStop').textContent='—';
-    document.getElementById('sigTp1').textContent='—';document.getElementById('sigTp2').textContent='—';
+    document.getElementById('sigTp1').textContent='—';
     document.getElementById('sSig').textContent='—';document.getElementById('sSig').className='val';
     document.getElementById('sSigSub').textContent='no setup right now';
     document.getElementById('takeBtn').disabled=true;
@@ -595,8 +595,7 @@ function updateUI(){
       +'<div class="row"><span class="k">Pair / Dir</span><span class="v '+(openState.dir==='long'?'up':'dn')+'">'+openState.pair+' '+openState.dir.toUpperCase()+'</span></div>'
       +'<div class="row"><span class="k">Entry</span><span class="v">'+fmt(openState.entry,2)+'</span></div>'
       +'<div class="row"><span class="k">Stop (1R)</span><span class="v dn">'+fmt(openState.stop,2)+'</span></div>'
-      +'<div class="row"><span class="k">Target 1 (2R)</span><span class="v up">'+fmt(openState.tp1,2)+'</span></div>'
-      +'<div class="row"><span class="k">Target 2 (15R)</span><span class="v">'+fmt(openState.tp2,2)+'</span></div>'
+      +'<div class="row"><span class="k">Target (3R)</span><span class="v up">'+fmt(openState.tgt,2)+'</span></div>'
       +'<div class="row"><span class="k">Live price</span><span class="v">'+fmt(live,2)+'</span></div>'
       +'<div class="row"><span class="k">Unrealized</span><span class="v '+(pnl>=0?'up':'dn')+'">$'+fmt(pnl,0)+' ('+(pnlR>=0?'+':'')+pnlR.toFixed(2)+'R)</span></div>'
       +'<div class="note" style="margin-top:12px">Managed by the auto-bot — closes automatically at stop or target.</div>'
@@ -613,6 +612,7 @@ function checkOpenTrade(){/* auto-bot manages open positions */}
 function setPair(p){
   pair=p;document.getElementById('btnXAU').classList.toggle('active',p==='XAUUSDT');
   document.getElementById('btnBTC').classList.toggle('active',p==='BTCUSDT');
+  document.getElementById('btnSOL').classList.toggle('active',p==='SOLUSDT');
   openState=botOpen[pair]||null;
   loadData().then(function(){updateUI();});
   loadChartData().then(function(){renderChart();connectWS();});

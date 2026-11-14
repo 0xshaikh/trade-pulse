@@ -295,7 +295,7 @@ def main():
     state.setdefault('hist', [])
     state.setdefault('open', {p: None for p in PAIRS})
     state.setdefault('lastDone', {})
-    print('Trade-Pulse v6 started (high-freq 1H portfolio: 7 pairs @ 0.25% risk). cap=%.0f hist=%d open=%d' %
+    print('Trade-Pulse v6 started (high-freq 1H portfolio: 7 pairs @ 0.25%% risk). cap=%.0f hist=%d open=%d' %
           (state['cap'], len(state['hist']), sum(1 for v in state['open'].values() if v)))
     while True:
         changed = False

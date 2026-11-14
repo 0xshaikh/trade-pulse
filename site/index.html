@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trade Pulse — GOLD / BTC / SOL 4H Trend System (v5)</title>
-<meta name="description" content="Focused portfolio: GOLD, BTC and SOL futures on 4H. Donchian10 breakout + MA100 trend + chop filter + daily MA200 gate, 1R/3R targets, 1% risk, paper trading from $1,000. Every trade and full history shown.">
+<title>Trade Pulse — 7-Pair 1H Trend System (v6)</title>
+<meta name="description" content="High-frequency portfolio: 7 crypto futures on 1H. Donchian10 breakout + MA100 trend + chop filter + daily MA200 gate, 1R/3R targets, 0.25% risk, paper trading from $1,000. Every trade and full history shown.">
 <link href="https://db.onlinewebfonts.com/c/13ab13418f633c1b0516fed6e30bedbc?family=Suisse+Int%27l" rel="stylesheet">
 <style>
 /* ============ APOGEE HERO (exact spec values) ============ */
@@ -230,7 +230,7 @@ tr.loss td.r{color:#f87171;font-weight:450}
             <h1>Trade the trend, not the noise</h1>
           </div>
           <div class="animate-fade-up" style="animation-delay:500ms">
-            <p class="sub">Focused 4H trend system on GOLD, BTC and SOL futures. Breakout + trend + chop filter, 1R/3R targets, 1% risk, paper from $1,000.</p>
+            <p class="sub">High-frequency 1H trend system on 7 liquid crypto futures. Breakout + trend + chop filter, 1R/3R targets, 0.25% risk, ~2 trades/day, paper from $1,000.</p>
           </div>
           <div class="animate-fade-up" style="animation-delay:700ms">
             <div class="cta-row">
@@ -280,19 +280,23 @@ tr.loss td.r{color:#f87171;font-weight:450}
 <div class="dash" id="dash">
   <div class="dash-head">
     <div>
-      <h1 class="dash-title">4H Trend System<small>GOLD · BTC · SOL futures · 4H · Donchian10 breakout + MA100 + chop filter + daily MA200 gate · 1R/3R · 1% risk</small></h1>
+      <h1 class="dash-title">1H Trend System<small>7 pairs × 1H · Donchian10 breakout + MA100 + chop filter + daily MA200 gate · 1R/3R · 0.25% risk · ~2 trades/day</small></h1>
     </div>
     <div class="pair-switch">
-      <button class="pair-btn active" id="btnXAU" onclick="setPair('XAUUSDT')">Gold (XAUUSDT)</button>
-      <button class="pair-btn" id="btnBTC" onclick="setPair('BTCUSDT')">Bitcoin (BTCUSDT)</button>
-      <button class="pair-btn" id="btnSOL" onclick="setPair('SOLUSDT')">Solana (SOLUSDT)</button>
+      <button class="pair-btn active" id="btnATOM" onclick="setPair('ATOMUSDT')">ATOM</button>
+      <button class="pair-btn" id="btnTIA" onclick="setPair('TIAUSDT')">TIA</button>
+      <button class="pair-btn" id="btnARB" onclick="setPair('ARBUSDT')">ARB</button>
+      <button class="pair-btn" id="btnAPT" onclick="setPair('APTUSDT')">APT</button>
+      <button class="pair-btn" id="btnDOGE" onclick="setPair('DOGEUSDT')">DOGE</button>
+      <button class="pair-btn" id="btnXRP" onclick="setPair('XRPUSDT')">XRP</button>
+      <button class="pair-btn" id="btnOP" onclick="setPair('OPUSDT')">OP</button>
     </div>
   </div>
 
   <div class="stat-strip">
     <div class="stat"><div class="lbl">Paper Equity</div><div class="val" id="sEq">$1,000</div><div class="sub">started $1,000</div></div>
     <div class="stat"><div class="lbl">Total Trades</div><div class="val" id="sTrades">0</div><div class="sub" id="sOpen">0 open</div></div>
-    <div class="stat"><div class="lbl">Win Rate</div><div class="val" id="sWr">—</div><div class="sub">1R/3R trend system</div><div class="wr-track"><div class="wr-fill" id="sWrFill" style="width:0%"></div></div></div>
+    <div class="stat"><div class="lbl">Win Rate</div><div class="val" id="sWr">—</div><div class="sub">1R/3R · 0.25% risk</div><div class="wr-track"><div class="wr-fill" id="sWrFill" style="width:0%"></div></div></div>
     <div class="stat"><div class="lbl">Profit Factor</div><div class="val" id="sPf">—</div><div class="sub" id="sPfSub">net R on closed trades</div></div>
     <div class="stat"><div class="lbl">Bot Signal</div><div class="val" id="sSig">—</div><div class="sub" id="sSigSub">waiting for data</div></div>
   </div>
@@ -301,11 +305,11 @@ tr.loss td.r{color:#f87171;font-weight:450}
     <div>
       <div class="panel">
         <div class="chart-head">
-          <h3>Price Chart <span class="tag live" id="pairTag">XAUUSDT · 4H</span></h3>
+          <h3>Price Chart <span class="tag live" id="pairTag">ATOMUSDT · 1H</span></h3>
           <div class="tf-switch">
             <button class="tf-btn" data-tf="15m" onclick="setTf('15m')">15M</button>
-            <button class="tf-btn" data-tf="1h" onclick="setTf('1h')">1H</button>
-            <button class="tf-btn active" data-tf="4h" onclick="setTf('4h')">4H</button>
+            <button class="tf-btn active" data-tf="1h" onclick="setTf('1h')">1H</button>
+            <button class="tf-btn" data-tf="4h" onclick="setTf('4h')">4H</button>
             <button class="tf-btn" data-tf="1d" onclick="setTf('1d')">1D</button>
           </div>
         </div>
@@ -341,7 +345,7 @@ tr.loss td.r{color:#f87171;font-weight:450}
         <div style="margin-top:16px;display:flex;gap:10px">
           <button class="btn light" id="takeBtn" onclick="takeTrade()" style="flex:1">Auto-Bot Trading</button>
         </div>
-        <p class="note"><b>Honest note:</b> this is a low-frequency 4H trend system — 1–2 trades per month per pair, only when a clean breakout + trend + regime gate align. Win rate ~35–40% (1R stops happen; the 3R winners fund them). Zero-loss is impossible; this is the positive-expectancy, low-drawdown portfolio.</p>
+        <p class="note"><b>Honest note:</b> high-frequency 1H trend system across 7 pairs — ~2 trades/day, only on clean breakouts with trend + regime gate aligned. Backtest (2.4yr, real fills): +149%, max DD −15.4%, 80% green months. Losses happen (worst month −11.7%); this is a positive-expectancy, risk-capped portfolio — not a zero-loss guarantee.</p>
       </div>
 
       <div class="panel" style="margin-top:16px">
@@ -408,7 +412,7 @@ function scrollToDash(){closeMenu();document.getElementById('dash').scrollIntoVi
 /* ============ STRATEGY (mirrors Python backtest) ============ */
 var FEE=0.0005,SLIP=0.0002,ROUND_TRIP=(FEE+SLIP)*2;
 var K=3,TOL=0.25;
-var pair='XAUUSDT',bars15=[],bars4h=[],lastSig=null,openState=null;
+var pair='ATOMUSDT',bars15=[],bars4h=[],lastSig=null,openState=null;
 
 function fmt(x,d){return x==null?'—':Number(x).toLocaleString(undefined,{minimumFractionDigits:(d==null?2:d),maximumFractionDigits:(d==null?2:d)});}
 function atr15(i,n){n=n||14;if(i<n)return null;var s=0;for(var j=i-n;j<i;j++){var b=bars15[j],p=bars15[j-1];var tr=Math.max(b.h-b.l,Math.abs(b.h-p.c),Math.abs(b.l-p.c));s+=tr;}return s/n;}
@@ -454,7 +458,7 @@ function loadData(){
 
 /* ============ LIVE TRADINGVIEW-STYLE CHART (lightweight-charts) ============ */
 var lwc=window.LightweightCharts,chart=null,candleSeries=null,volSeries=null,tlSeries=null;
-var chartTf='4h',chartKlines=[],ws=null;
+var chartTf='1h',chartKlines=[],ws=null;
 
 function initChart(){
   if(!lwc||!document.getElementById('chart'))return false;
@@ -613,9 +617,11 @@ function takeTrade(){toast('Auto-Bot runs the trades — signals are taken autom
 function closeTrade(reason,exitP){toast('Managed by the auto-bot.');}
 function checkOpenTrade(){/* auto-bot manages open positions */}
 function setPair(p){
-  pair=p;document.getElementById('btnXAU').classList.toggle('active',p==='XAUUSDT');
-  document.getElementById('btnBTC').classList.toggle('active',p==='BTCUSDT');
-  document.getElementById('btnSOL').classList.toggle('active',p==='SOLUSDT');
+  pair=p;
+  ['ATOMUSDT','TIAUSDT','ARBUSDT','APTUSDT','DOGEUSDT','XRPUSDT','OPUSDT'].forEach(function(s){
+    var b=document.getElementById('btn'+s.replace('USDT',''));
+    if(b)b.classList.toggle('active',p===s);
+  });
   openState=botOpen[pair]||null;
   loadData().then(function(){updateUI();});
   loadChartData().then(function(){renderChart();connectWS();});

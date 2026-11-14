@@ -1,7 +1,7 @@
 {
  "equity": 9401.47,
  "cash": 9401.47,
- "day_realized_pct": -1.94,
+ "day_realized_pct": 0.0,
  "open": [],
  "history": [
   {
@@ -545,5 +545,5 @@
    "equity": 9401.47
   }
  ],
- "updated": 1794614386
+ "updated": 1794614449
 }

@@ -602,7 +602,7 @@ function updateUI(){
       +'</div>';
   }else{ot.innerHTML='<div class="empty">No open position. Wait for a signal, then take it.</div>';}
   var tb=document.getElementById('histBody');tb.innerHTML='';
-  hist.slice().reverse().forEach(function(h){var tr=document.createElement('tr');tr.className=h.rR>0?'win':'loss';tr.innerHTML='<td>'+h.pair+'</td><td style="color:'+(h.dir==='long'?'#4ade80':'#f87171')+'">'+h.dir.toUpperCase()+'</td><td>'+fmt(h.entry,2)+'</td><td>'+fmt(h.exit,2)+'</td><td class="r">'+(h.rR>=0?'+':'')+h.rR.toFixed(2)+'R</td><td>'+h.reason+'</td><td>'+h.bars+'</td>';tb.appendChild(tr);});
+  hist.slice().reverse().forEach(function(h){var dirL=(h.dir==='long'||h.dir==='LONG'||h.dir===1);var dirTxt=dirL?'LONG':'SHORT';var tr=document.createElement('tr');tr.className=h.rR>0?'win':'loss';tr.innerHTML='<td>'+h.pair+'</td><td style="color:'+(dirL?'#4ade80':'#f87171')+'">'+dirTxt+'</td><td>'+fmt(h.entry,2)+'</td><td>'+fmt(h.exit,2)+'</td><td class="r">'+(h.rR>=0?'+':'')+h.rR.toFixed(2)+'R</td><td>'+h.reason+'</td><td>'+h.bars+'</td>';tb.appendChild(tr);});
   document.getElementById('histCount').textContent=hist.length;
   document.getElementById('histEmpty').style.display=hist.length?'none':'block';
 }

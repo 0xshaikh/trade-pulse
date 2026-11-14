@@ -6,7 +6,7 @@
  "winrate": 19.4,
  "avg_r": -0.29,
  "pf": 0.34,
- "equity": 9407.69,
+ "equity": 9409.1,
  "causes": {
   "Signal exit at a loss": 24,
   "Chop": 3,
@@ -253,5 +253,5 @@
    "lesson": "Trend reversal after hold \u2014 regime filter too slow for this one."
   }
  ],
- "generated": 1794645675
+ "generated": 1794645737
 }

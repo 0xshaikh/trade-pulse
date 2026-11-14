@@ -1,1 +1,16 @@
-{"cap": 1000.0, "hist": [], "open": {"XAUUSDT": null, "BTCUSDT": null, "SOLUSDT": null}, "lastDone": {}, "updated": 0, "started": 1794690630.0324292}
+{
+ "cap": 1000.0,
+ "hist": [],
+ "open": {
+  "ATOMUSDT": null,
+  "TIAUSDT": null,
+  "ARBUSDT": null,
+  "APTUSDT": null,
+  "DOGEUSDT": null,
+  "XRPUSDT": null,
+  "OPUSDT": null
+ },
+ "lastDone": {},
+ "updated": 0,
+ "started": 1794699415
+}

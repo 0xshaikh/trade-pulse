@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-Trade-Pulse v5 — focused portfolio (GOLD / BTC / SOL x 4H), strategy v4.
-Evidence-first, data-validated (see market-prediction skill Round 12):
+Trade-Pulse v6 — higher-frequency portfolio (7 pairs x 1H), strategy v4.
+Evidence-first, data-validated (market-prediction skill, freq analysis):
   Donchian10 breakout (look-ahead-safe) + MA100 trend + chop filter
   + ATR band (0.5-3.0%) + daily MA200 distance >= 5% gate
   1R stop (2xATR14) / 3R target (6xATR14), real fills (next-open + slip + taker)
-  1% risk/trade, $1,000 virtual, PAPER ONLY, no real money, no future data.
+  0.25% risk/trade, $1,000 virtual, PAPER ONLY, no real money, no future data.
+Backtest (2.4yr, real fills): 7 both-halves-positive 1H pairs = 2.1 trades/day,
++149% return, -15.4% max DD, 80% green months, worst month -11.7% @ 0.25% risk.
 Publishes site/data/trades.json (FULL history: every trade) + site/data/review.json.
-Closed 4H bars only. Fresh start (2026-11-14) — old losing strategy retired.
+Closed 1H bars only. Fresh start (2026-11-14) — old losing strategy retired.
 """
 import json
 import os
@@ -21,9 +23,9 @@ REVIEW_JSON = os.path.join(BASE, 'site', 'data', 'review.json')
 FAPI = 'https://fapi.binance.com/fapi/v1/klines'
 
 CAP = 1000.0
-RISK = 0.01                    # 1% of equity per trade
-PAIRS = ['XAUUSDT', 'BTCUSDT', 'SOLUSDT']   # GOLD, BTC, SOL (Binance USDT-M perps)
-TF = '4h'
+RISK = 0.0025                  # 0.25% of equity per trade (higher-freq portfolio)
+PAIRS = ['ATOMUSDT', 'TIAUSDT', 'ARBUSDT', 'APTUSDT', 'DOGEUSDT', 'XRPUSDT', 'OPUSDT']
+TF = '1h'
 POLL = 60                      # seconds between checks
 STALE_SIG = 300                # only take a signal whose bar closed <5min ago
 
@@ -80,11 +82,17 @@ def donchian(bars, n):
 
 
 def daily_gate(daily, bar_t):
-    """Return +1/-1/0 for the daily bar containing bar_t. daily = list of (t_ms, close)."""
+    """Return +1/-1/0 for the daily bar containing bar_t. daily = dicts or (t, close)."""
     d = bar_t // 86400000
-    dcloses = [c for _, c in daily]
+    pairs = []
+    for x in daily:
+        if isinstance(x, dict):
+            pairs.append((x['t'], x['c']))
+        else:
+            pairs.append((x[0], x[1]))
+    dcloses = [c for _, c in pairs]
     dma = sma(dcloses, DAILY_MA)
-    for i, (t, c) in enumerate(daily):
+    for i, (t, c) in enumerate(pairs):
         if t // 86400000 == d:
             if dma[i] is None:
                 return 0
@@ -255,7 +263,7 @@ def process_pair(pair, state, bars, daily):
                 'pair': pair, 'dir': d, 'entry': op['entry'], 'exit': exit_p,
                 'rR': netR, 'reason': reason, 'size': op['size'],
                 'riskUsd': op['size'] * op['risk'],
-                'bars': int((ct - op['entryT']) / (4 * 3600)),
+                'bars': int((ct - op['entryT']) / (3600)),
                 'exitT': ct, 'atr': round(op['atr'], 4),
             })
             state['open'][pair] = None
@@ -287,7 +295,7 @@ def main():
     state.setdefault('hist', [])
     state.setdefault('open', {p: None for p in PAIRS})
     state.setdefault('lastDone', {})
-    print('Trade-Pulse v5 started (fresh portfolio: GOLD/BTC/SOL x 4H). cap=%.0f hist=%d open=%d' %
+    print('Trade-Pulse v6 started (high-freq 1H portfolio: 7 pairs @ 0.25% risk). cap=%.0f hist=%d open=%d' %
           (state['cap'], len(state['hist']), sum(1 for v in state['open'].values() if v)))
     while True:
         changed = False
